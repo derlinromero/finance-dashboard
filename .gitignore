@@ -1,0 +1,43 @@
+# ========================
+# Environment Variables
+# ========================
+.env
+
+# ========================
+# Backend (Python/FastAPI)
+# ========================
+backend/__pycache__
+backend/venv
+
+# ========================
+# Frontend (React)
+# ========================
+frontend/node_modules
+
+# ========================
+# IDEs and Editors
+# ========================
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.project
+.classpath
+.c9/
+*.launch
+.settings/
+*.sublime-workspace
+*.sublime-project
+
+# ========================
+# Operating System Files
+# ========================
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+Desktop.ini
