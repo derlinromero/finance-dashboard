@@ -9,6 +9,7 @@ function Auth() {
   const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [fullName, setFullName] = useState('');
   const [isSignUp, setIsSignUp] = useState(false);
   const [message, setMessage] = useState('');
 
@@ -19,15 +20,31 @@ function Auth() {
 
     try {
       if (isSignUp) {
-        // Sign up new user
-        const { data, error } = await supabase.auth.signUp({
+        // Confirmation dialog before signup
+        const confirmMessage = `Please confirm your details:\n\n` +
+        `Full Name: ${fullName}\n` +
+        `Email: ${email}\n\n` +
+        `⚠️ Make sure these are correct!`;
+
+        if (!window.confirm(confirmMessage)) {
+          setLoading(false);
+          return;
+        }
+
+        // Sign up new user with full name
+        const {data, error} = await supabase.auth.signUp({
           email,
           password,
+          options: {
+            data: {
+              full_name: fullName,
+            }
+          }
         });
-        
+
         if (error) throw error;
-        
-        setMessage('Check your email for confirmation link!');
+
+        setMessage('✅ Account created! Check your email for confirmation link.')
       } else {
         // Sign in existing user
         const { data, error } = await supabase.auth.signInWithPassword({
@@ -55,6 +72,22 @@ function Auth() {
         </p>
 
         <form onSubmit={handleAuth} className="space-y-4">
+          {isSignUp && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Full Name
+              </label>
+              <input
+                type="text"
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="You Example"
+                required={isSignUp}
+              />
+            </div>
+          )}
+
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Email

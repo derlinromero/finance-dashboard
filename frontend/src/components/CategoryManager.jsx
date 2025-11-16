@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import axios from 'axios';
-import { Tag, PlusCircle, X } from 'lucide-react';
+import { Tag, Edit2, X, Trash2, Save } from 'lucide-react';
 
 const API_URL = process.env.REACT_APP_API_URL;
 
@@ -8,39 +8,55 @@ const API_URL = process.env.REACT_APP_API_URL;
  * CategoryManager Component - Manage custom categories
  */
 function CategoryManager({ userId, categories, onCategoriesUpdated }) {
-  const [showAddForm, setShowAddForm] = useState(false);
-  const [newCategoryName, setNewCategoryName] = useState('');
-  const [adding, setAdding] = useState(false);
+  const [editingId, setEditingId] = useState(null);
+  const [editName, setEditName] = useState('');
 
-  const handleAddCategory = async (e) => {
-    e.preventDefault();
-    if (!newCategoryName.trim()) return;
+  const handleDelete = async (categoryId) => {
+    if (!window.confirm("Delte this category? Existing expenses will keep it.")) {
+      return;
+    }
 
-    setAdding(true);
     try {
-      await axios.post(`${API_URL}/categories`, {
-        user_id: userId,
-        name: newCategoryName.trim()
-      });
-
-      setNewCategoryName('');
-      setShowAddForm(false);
-      
-      // Refresh categories list
+      await axios.delete(`${API_URL}/categories/${categoryId}`);
       if (onCategoriesUpdated) {
         onCategoriesUpdated();
       }
+      alert('✅ Category deleted successfully!');
     } catch (error) {
-      console.error('Error adding category:', error);
-      if (error.response?.status === 500) {
-        alert('Category already exists or invalid name');
-      } else {
-        alert('Failed to add category');
-      }
-    } finally {
-      setAdding(false);
+      console.error('Error deleting category:', error);
+      alert('Failed to delete category');
     }
   };
+
+  const startEdit = (category) => {
+    setEditingId(category.id);
+    setEditName(category.name);
+  };
+
+  const saveEdit = async (categoryId) => {
+    try {
+      await axios.put(`${API_URL}/categories/${categoryId}`, {
+        name: editName.trim()
+      });
+
+      setEditingId(null);
+      setEditName('');
+
+      if (onCategoriesUpdated) {
+        onCategoriesUpdated();
+      }
+
+      alert('✅ Category updated successfully!');
+    } catch (error) {
+      console.error('Error updating category:', error);
+      alert('Failed to update category');
+    }
+  };
+
+  const cancelEdit = () => {
+    setEditingId(null);
+    setEditName('');
+  }
 
   return (
     <div className="bg-white rounded-lg shadow-md p-6">
@@ -49,46 +65,14 @@ function CategoryManager({ userId, categories, onCategoriesUpdated }) {
           <Tag className="w-5 h-5" />
           My Categories ({categories.length})
         </h2>
-        <button
-          onClick={() => setShowAddForm(!showAddForm)}
-          className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-semibold hover:bg-blue-700 transition flex items-center gap-1"
-        >
-          {showAddForm ? (
-            <>
-              <X className="w-4 h-4" />
-              Cancel
-            </>
-          ) : (
-            <>
-              <PlusCircle className="w-4 h-4" />
-              Add Category
-            </>
-          )}
-        </button>
+        
       </div>
 
-      {/* Add Category Form */}
-      {showAddForm && (
-        <form onSubmit={handleAddCategory} className="mb-4 p-4 bg-gray-50 rounded-lg">
-          <div className="flex gap-2">
-            <input
-              type="text"
-              value={newCategoryName}
-              onChange={(e) => setNewCategoryName(e.target.value)}
-              className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-              placeholder="e.g., Coffee, Gas, Subscriptions..."
-              required
-            />
-            <button
-              type="submit"
-              disabled={adding}
-              className="px-6 py-2 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 transition disabled:opacity-50"
-            >
-              {adding ? 'Adding...' : 'Add'}
-            </button>
-          </div>
-        </form>
-      )}
+      <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+        <p className="text-sm text-blue-900">
+          💡 <strong>Tip:</strong> Categories are automatically created when you add or edit expenses. Here you can rename or delete them.
+        </p>
+      </div>
 
       {/* Categories Grid */}
       {categories.length === 0 ? (
@@ -96,8 +80,7 @@ function CategoryManager({ userId, categories, onCategoriesUpdated }) {
           <Tag className="w-12 h-12 text-gray-300 mx-auto mb-3" />
           <p className="text-gray-500 mb-2">No custom categories yet</p>
           <p className="text-sm text-gray-400">
-            Categories will be created automatically as you add expenses,<br />
-            or you can create them manually above.
+            Add you first expense to create categories automatically!
           </p>
         </div>
       ) : (
@@ -105,11 +88,57 @@ function CategoryManager({ userId, categories, onCategoriesUpdated }) {
           {categories.map((category) => (
             <div
               key={category.id}
-              className="px-4 py-3 bg-blue-50 border border-blue-200 rounded-lg text-center"
+              className="px-4 py-3 bg-blue-50 border border-blue-200 rounded-lg flex items-center justify-between"
             >
-              <span className="text-sm font-medium text-blue-900">
-                {category.name}
-              </span>
+              {editingId === category.id ? (
+                <>
+                  <input
+                    type="text"
+                    value={editName}
+                    onChange={(e) => setEditName(e.target.value)}
+                    className="flex-1 px-2 py-1 border border-gray-300 rounded mr-2"
+                    autoFocus
+                  />
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => saveEdit(category.id)}
+                      className="text-green-600 hover:text-green-800"
+                      title="Save"
+                    >
+                      <Save className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={cancelEdit}
+                      className="text-gray-600 hover:text-gray-800"
+                      title="Cancel"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <span className="text-sm font-medium text-blue-900">
+                    {category.name}
+                  </span>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => startEdit(category)}
+                      className="text-blue-600 hover:text-blue-800"
+                      title="Edit"
+                    >
+                      <Edit2 className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => handleDelete(category.id)}
+                      className="text-red-600 hover:text-red-800"
+                      title="Delelte"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                </>
+              )}
             </div>
           ))}
         </div>

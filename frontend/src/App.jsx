@@ -8,7 +8,7 @@ import CSVUpload from './components/CSVUpload';
 import Charts from './components/Charts';
 import BudgetAlerts from './components/BudgetAlerts';
 import CategoryManager from './components/CategoryManager';
-import { LogOut, RefreshCw, Sparkles } from 'lucide-react';
+import { LogOut, Sparkles } from 'lucide-react';
 
 const API_URL = process.env.REACT_APP_API_URL;
 
@@ -144,18 +144,10 @@ function App() {
                 AI Finance Dashboard
               </h1>
               <p className="text-sm text-gray-600 mt-1">
-                Welcome back, {session.user.email}
+                Welcome back, {session.user.user_metadata?.full_name || session.user.email?.split('@')[0]}
               </p>
             </div>
             <div className="flex gap-2">
-              <button
-                onClick={fetchExpenses}
-                className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition flex items-center gap-2"
-                title="Refresh data"
-              >
-                <RefreshCw className="w-4 h-4" />
-                Refresh
-              </button>
               <button
                 onClick={handleGenerateDemo}
                 className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition text-sm font-semibold"

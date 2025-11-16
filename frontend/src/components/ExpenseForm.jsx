@@ -56,6 +56,9 @@ function ExpenseForm({ userId, categories, onExpenseAdded }) {
         date: formattedDate
       });
 
+      // Show success notification
+      alert("✅ Expense added successfully!")
+
       // Reset form
       setTitle('');
       setAmount('');
@@ -137,22 +140,30 @@ function ExpenseForm({ userId, categories, onExpenseAdded }) {
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Category
             </label>
-            <input
-              type="text"
-              list="categories-list"
+            <select
               value={category}
               onChange={(e) => setCategory(e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-              placeholder="Type or select catergory..."
-            />
-              <datalist id="categories-list">
-                {categories.map((cat) => (
-                  <option key={cat.id} value={cat.name} />
-                ))}
-              </datalist>
-              <p className="text-xs text-gray-500 mt-1">
-                Type a new category to create it, or select from the existing ones
-              </p>
+            >
+              <option value="">Choose or let AI suggest...</option>
+              {categories.map((cat) => (
+                <option key={cat.id} value={cat.name}>
+                  {cat.name}
+                </option>
+              ))}
+              <option value="__new__" className="font-semibold text-blue-600">
+                + Add New Category
+              </option>
+            </select>
+            {category === '__new__' && (
+              <input
+                type="text"
+                placeholder="Enter new category name..."
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focur:ring-2 focus:ring-blue-500 mt-2"
+                onChange={(e) => setCategory(e.target.value)}
+                autoFocus
+              />
+            )}
           </div>
 
           <div>
