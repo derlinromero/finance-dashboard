@@ -2,7 +2,7 @@ from fastapi import FastAPI, HTTPException, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from models import (
     ExpenseCreate, ExpenseUpdate, CategoryCreate, 
-    BudgetCreate, CategorySuggestionRequest
+    BudgetCreate, CategorySuggestionRequest, CategoryUpdate
 )
 from database import get_supabase
 from ai_categorizer import (
@@ -201,6 +201,34 @@ async def get_categories(user_id: str):
             .execute()
         
         return {"success": True, "data": response.data}
+    
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.put("/categories/{category_id}")
+async def update_category(category_id: str, update: CategoryUpdate):
+    """Update a category name"""
+    try:
+        response = supabase.table('categories')\
+            .update({'name': update.name})\
+            .eq('id', category_id)\
+            .execute()
+        
+        return {"success": True, "data": response.data[0] if response.data else None}
+    
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@app.delete("/categories/{category_id}")
+async def delete_category(category_id: str):
+    """Delete a category"""
+    try:
+        response = supabase.table('categories')\
+            .delete()\
+            .eq('id', category_id)\
+            .execute()
+        
+        return {"success": True}
     
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
