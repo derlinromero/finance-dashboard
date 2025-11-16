@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Trash2, AlertTriangle, Edit2, X, Save } from 'lucide-react';
 import axios from 'axios';
-import { format } from 'date-fns';
+import { format, set } from 'date-fns';
 
 const API_URL = process.env.REACT_APP_API_URL;
 
@@ -61,14 +61,6 @@ function ExpenseList({ expenses, categories, onExpenseDeleted, onExpenseUpdated 
         category: editForm.category,
         date: editForm.date
       };
-
-      console.log('Sending update payload:', payload);
-      console.log('Payload types:', {
-        title: typeof payload.title,
-        amount: typeof payload.amount,
-        category: typeof payload.category,
-        date: typeof payload.date
-      });
       
       const response = await axios.put(`${API_URL}/expenses/${expenseId}`, payload);
 
@@ -86,9 +78,11 @@ function ExpenseList({ expenses, categories, onExpenseDeleted, onExpenseUpdated 
 
       setEditingId(null)
       setEditForm({title: '', amount: '', category: '', date: ''});
+
+      // Show success notification
+      alert('✅ Expense updated successfully!');
     } catch (error) {
       console.error('Error updating expense:', error);
-      console.error('Error response:', error.response?.data);
       alert('Failed to update expense');
     }
   };
@@ -168,13 +162,38 @@ function ExpenseList({ expenses, categories, onExpenseDeleted, onExpenseUpdated 
                 {/* Category Column */}
                 <td className="py-3 px-4">
                   {editingId === expense.id ? (
-                    <input
-                      type="text"
-                      list="edit-categories-list"
-                      value={editForm.category}
-                      onChange={(e) => setEditForm({ ...editForm, category: e.target.value})}
-                      className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
-                    />
+                    <>
+                      <select
+                        value={editForm.category === '__new__' ? '__new__' : editForm.category}
+                        onChange={(e) => {
+                          const value = e.target.value;
+                          if (value === '__new__') {
+                            setEditForm({ ...editForm, category: '__new__'});
+                          } else {
+                            setEditForm({ ...editForm, category: value});
+                          }
+                        }}
+                        className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
+                      >
+                        {categories && categories.map((cat) => (
+                          <option key={cat.id} value={cat.name}>
+                            {cat.name}
+                          </option>
+                        ))}
+                        <option value="__new__" className="font-semibold">
+                          + Add New Category
+                        </option>
+                      </select>
+                      {editForm.category === '__new__' && (
+                        <input
+                          type="text"
+                          placeholder="Enter new category name..."
+                          className="w-full px-2 py-1 border border-gray-300 rounded text-sm mt-1"
+                          onChange={(e) => setEditForm({ ...editForm, category: e.target.value})}
+                          autoFocus
+                        />
+                      )}
+                    </>
                   ) : (
                     <span className="inline-block px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded">
                       {expense.category}
@@ -239,13 +258,6 @@ function ExpenseList({ expenses, categories, onExpenseDeleted, onExpenseUpdated 
             ))}
           </tbody>
         </table>
-
-        {/* Datalist for category autocomplete in edit mode */}
-        <datalist id="edit-categories-list">
-          {categories && categories.map((cat) => (
-            <option key={cat.id} value={cat.name} />
-          ))}
-      </datalist>
       </div>
       
       {/* Summary */}
