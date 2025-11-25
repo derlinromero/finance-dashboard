@@ -61,6 +61,33 @@ function Auth() {
     }
   };
 
+  const handlePasswordReset = async () => {
+    const resetEmail = prompt('Enter your email address to reset password');
+
+    if (!resetEmail) return; // User cancelled
+
+    setLoading(true);
+    setMessage('');
+
+    try {
+      await supabase.auth.signOut(); // Close current session
+
+      sessionStorage.removeItem('isPasswordRecovery');
+
+      const {error } = await supabase.auth.resetPasswordForEmail(resetEmail, {
+        redirectTo: `${window.location.origin}/ResetPassword`,
+      });
+
+      if (error) throw error;
+
+      setMessage('📧 If this email is registered and correctly written, you will receive a password reset link.');
+    } catch (error) {
+      setMessage(`❌ ${error.message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-500 to-purple-600">
       <div className="bg-white p-8 rounded-lg shadow-2xl w-96">
@@ -141,6 +168,7 @@ function Auth() {
             onClick={() => {
               setIsSignUp(!isSignUp);
               setMessage('');
+              setFullName('');
             }}
             className="text-blue-600 hover:underline text-sm"
           >
@@ -148,6 +176,18 @@ function Auth() {
               ? 'Already have an account? Sign In' 
               : "Don't have an account? Sign Up"}
           </button>
+
+          {!isSignUp && (
+            <div className="mt-2">
+              <button
+                onClick={handlePasswordReset}
+                disabled={loading}
+                className="text-gray-600 hover:underline text-sm disabled:opacity-50"
+              >
+                Forgot password?
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </div>
