@@ -3,7 +3,6 @@ import ExpenseForm from './ExpenseForm';
 import ExpenseList from './ExpenseList';
 import CSVUpload from './CSVUpload';
 import Charts from './Charts';
-import BudgetAlerts from './BudgetAlerts';
 import CategoryManager from './CategoryManager';
 import { LogOut, Sparkles } from 'lucide-react';
 
@@ -50,7 +49,6 @@ function Dashboard({ session, fetchExpenses, fetchCategories, expenses, categori
                 {[
                 { id: 'overview', label: 'Overview' },
                 { id: 'analytics', label: 'Analytics' },
-                { id: 'budgets', label: 'Budgets' },
                 { id: 'categories', label: 'Categories' },
                 ].map((tab) => (
                 <button
@@ -98,13 +96,6 @@ function Dashboard({ session, fetchExpenses, fetchCategories, expenses, categori
 
             {activeTab === 'analytics' && (
             <Charts userId={session.user.id} />
-            )}
-
-            {activeTab === 'budgets' && (
-            <BudgetAlerts
-                userId={session.user.id}
-                categories={categories}
-            />
             )}
 
             {activeTab === 'categories' && (
