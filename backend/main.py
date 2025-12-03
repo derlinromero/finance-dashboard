@@ -1,8 +1,7 @@
 from fastapi import FastAPI, HTTPException, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from models import (
-    ExpenseCreate, ExpenseUpdate, CategoryCreate, 
-    BudgetCreate, CategorySuggestionRequest, CategoryUpdate
+    ExpenseCreate, ExpenseUpdate, CategoryCreate, CategorySuggestionRequest, CategoryUpdate
 )
 from database import get_supabase
 from ai_categorizer import (
@@ -239,43 +238,6 @@ async def suggest_category(request: CategorySuggestionRequest):
     try:
         suggestion = suggest_category_ai(request.title, request.amount, request.user_id)
         return {"success": True, "suggested_category": suggestion}
-    
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-# ==================== BUDGETS ====================
-
-@app.post("/budgets")
-async def create_budget(budget: BudgetCreate):
-    """Create or update a budget"""
-    try:
-        data = {
-            'user_id': budget.user_id,
-            'category': budget.category,
-            'limit_amount': budget.limit_amount,
-            'month': budget.month.isoformat()
-        }
-        
-        # Upsert (insert or update if exists)
-        response = supabase.table('budgets').upsert(data).execute()
-        return {"success": True, "data": response.data[0]}
-    
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-from typing import Optional
-
-@app.get("/budgets/{user_id}")
-async def get_budgets(user_id: str, month: Optional[str] = None):
-    """Get budgets for a user, optionally filtered by month"""
-    try:
-        query = supabase.table('budgets').select('*').eq('user_id', user_id)
-        
-        if month:
-            query = query.eq('month', month)
-        
-        response = query.execute()
-        return {"success": True, "data": response.data}
     
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

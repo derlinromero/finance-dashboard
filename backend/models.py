@@ -39,12 +39,6 @@ class CategoryCreate(BaseModel):
 class CategoryUpdate(BaseModel):
     name: str
 
-class BudgetCreate(BaseModel):
-    category: str
-    limit_amount: float
-    month: date
-    user_id: str
-
 class CategorySuggestionRequest(BaseModel):
     title: str
     amount: float
