@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
-import { Trash2, AlertTriangle, Edit2, X, Save } from 'lucide-react';
+import React, { useState, useMemo } from 'react';
+import { Trash2, AlertTriangle, Edit2, X, Save, ChevronUp, ChevronDown, ChevronsUpDown } from 'lucide-react';
 import axios from 'axios';
-import { format, set } from 'date-fns';
+import { format, previousDay} from 'date-fns';
 
 const API_URL = process.env.REACT_APP_API_URL;
 
@@ -16,6 +16,97 @@ function ExpenseList({ expenses, categories, onExpenseDeleted, onExpenseUpdated 
     category: '',
     date: ''
   });
+
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage,  setItemsPerPage] = useState(10);
+
+  // Sorting state
+  const [sortConfig, setSortConfig] = useState({
+    key: null,
+    direction: null
+  });
+
+  // Handle sorting
+  const handleSort = (key) => {
+    let direction = 'asc';
+    if (sortConfig.key === key && sortConfig.direction === 'asc') {
+      direction = 'desc';
+    } else if (sortConfig.key === key && sortConfig.direction === 'desc') {
+      direction = null;
+    }
+    setSortConfig({key, direction});
+    setCurrentPage(1); // Reset to first page when sorting
+  };
+
+  // Get sort icon for column
+  const getSortIcon = (columnKey) => {
+    if (sortConfig.key !== columnKey) {
+      return <ChevronsUpDown className="w-4 h-4 text-gray-400" />;
+    }
+    if (sortConfig.direction === 'asc') {
+      return <ChevronUp className="w-4 h-4 text-blue-600" />;
+    }
+    if (sortConfig.direction === 'desc') {
+      return <ChevronDown className="w-4 h-4 text-blue-600" />;
+    }
+    return <ChevronsUpDown className="w-4 h-4 text-gray-400" />;
+  };
+
+  // Sort and paginate expenses
+  const sortedAndPaginatedExpenses = useMemo(() => {
+    let sortedExpenses = [...expenses];
+
+    // Apply sorting
+    if (sortConfig.key && sortConfig.direction) {
+      sortedExpenses.sort((a, b) => {
+        let aValue, bValue;
+
+        switch (sortConfig.key) {
+          case 'date':
+            aValue = new Date(a.date);
+            bValue = new Date(b.date);
+            break;
+          case 'title':
+            aValue = a.title.toLowerCase();
+            bValue = b.title.toLowerCase();
+            break;
+          case 'category':
+            aValue = a.category.toLowerCase();
+            bValue = b.category.toLowerCase();
+            break;
+          case 'amount':
+            aValue = parseFloat(a.amount);
+            bValue = parseFloat(b.amount);
+            break;
+          default:
+            return 0;
+        }
+
+        if (aValue < bValue) {
+          return sortConfig.direction === 'asc' ? -1 : 1;
+        }
+        if (aValue > bValue) {
+          return sortConfig.direction === 'asc' ? 1 : -1;
+        }
+        return 0;
+      });
+    }
+
+    // Apply pagination
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    return sortedExpenses.slice(startIndex, endIndex);
+  }, [expenses, sortConfig, currentPage, itemsPerPage]);
+
+  // Calculate total pages
+  const totalPages = Math.ceil(expenses.length / itemsPerPage);
+
+  // Handle page size change
+  const handleItemsPerPageChange = (newSize) => {
+    setItemsPerPage(newSize);
+    setCurrentPage(1); // Reset to first page
+  };
   
   const handleDelete = async (expenseId) => {
     if (!window.confirm('Are you sure you want to delete this expense?')) {
@@ -90,7 +181,7 @@ function ExpenseList({ expenses, categories, onExpenseDeleted, onExpenseUpdated 
   if (!expenses || expenses.length === 0) {
     return (
       <div className="bg-white rounded-lg shadow-md p-6">
-        <h2 className="text-xl font-bold mb-4">Recent Expenses</h2>
+        <h2 className="text-xl font-bold mb-4">Total Expenses</h2>
         <p className="text-gray-500 text-center py-8">
           No expenses yet. Add your first expense above!
         </p>
@@ -100,23 +191,76 @@ function ExpenseList({ expenses, categories, onExpenseDeleted, onExpenseUpdated 
 
   return (
     <div className="bg-white rounded-lg shadow-md p-6">
-      <h2 className="text-xl font-bold mb-4">
-        Recent Expenses ({expenses.length})
-      </h2>
+      <div className="flex justify-between items-center mb-4">
+        <h2 className="text-xl font-bold mb-4">
+        Total Expenses ({expenses.length})
+        </h2>
+
+        <div className="flex items-center gap-2">
+          <span className="text-sm text-gray-600">Show:</span>
+          <select
+            value={itemsPerPage}
+            onChange={(e) => handleItemsPerPageChange(parseInt(e.target.value))}
+            className="px-3 py-1 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          >
+            <option value={10}>10</option>
+            <option value={25}>25</option>
+            <option value={50}>50</option>
+            <option value={100}>100</option>
+          </select>
+          <span className="text-sm text-gray-600">per page</span>
+        </div>
+      </div>
 
       <div className="overflow-x-auto">
         <table className="w-full">
           <thead>
             <tr className="border-b border-gray-200">
-              <th className="text-left py-3 px-4 font-semibold text-gray-700">Date</th>
-              <th className="text-left py-3 px-4 font-semibold text-gray-700">Description</th>
-              <th className="text-left py-3 px-4 font-semibold text-gray-700">Category</th>
-              <th className="text-right py-3 px-4 font-semibold text-gray-700">Amount</th>
+              <th
+                className="text-left py-3 px-4 font-semibold text-gray-700 cursor-pointer hover:bg-gray-50 select-none"
+                onClick={() => handleSort('date')}
+              >
+                <div className="flex items-center gap-2">
+                  Date
+                  {getSortIcon('date')}
+                </div>
+              </th>
+              
+              <th
+                className="text-left py-3 px-4 font-semibold text-gray-700 cursor-pointer hover:bg-gray-50 select-none"
+                onClick={() => handleSort('title')}
+              >
+                <div className="flex items-center gap-2">
+                  Description
+                  {getSortIcon('title')}
+                </div>
+              </th>
+
+              <th
+                className="text-left py-3 px-4 font-semibold text-gray-700 cursor-pointer hover:bg-gray-50 select-none"
+                onClick={() => handleSort('category')}
+              >
+                <div className="flex items-center gap-2">
+                  Category
+                  {getSortIcon('category')}
+                </div>
+              </th>
+
+              <th
+                className="text-right py-3 px-4 font-semibold text-gray-700 cursor-pointer hover:bg-gray-50 select-none"
+                onClick={() => handleSort('amount')}
+              >
+                <div className="flex items-center justify-end gap-2">
+                  Amount
+                  {getSortIcon('amount')}
+                </div>
+              </th>
+
               <th className="text-center py-3 px-4 font-semibold text-gray-700">Actions</th>
             </tr>
           </thead>
           <tbody>
-            {expenses.map((expense) => (
+            {sortedAndPaginatedExpenses.map((expense) => (
               <tr 
                 key={expense.id} 
                 className={`border-b border-gray-100 hover:bg-gray-50 ${
@@ -258,6 +402,69 @@ function ExpenseList({ expenses, categories, onExpenseDeleted, onExpenseUpdated 
             ))}
           </tbody>
         </table>
+      </div>
+      
+      {/* Pagination Controls */}
+      <div className="mt-4 flex justify-between items-center">
+        <div className="text-sm text-gray-600">
+          Showing {((currentPage - 1) * itemsPerPage) + 1} to{' '}
+          {Math.min(currentPage * itemsPerPage, expenses.length)} of{' '}
+          {expenses.length} expenses
+        </div>
+
+        <div className="flex gap-2">
+          <button
+            onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+            disabled={currentPage === 1}
+            className={`px-3 py-1 rounded-lg text-sm font-medium ${
+              currentPage === 1
+                ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                : 'bg-blue-600 text-white hover:bg-blue-700'
+            }`}
+          >
+            Previous
+          </button>
+
+          <div className="flex items-center gap-1">
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => {
+              // Show first page, last, current, and pages around current
+              if (
+                page === 1 ||
+                page === totalPages ||
+                (page >= currentPage - 1 && page <= currentPage + 1)
+              ) {
+                return (
+                  <button
+                    key={page}
+                    onClick={() => setCurrentPage(page)}
+                    className={`px-3 py-1 rounded-lg text-sm font-medium ${
+                      currentPage === page
+                        ? 'bg-blue-600 text-white'
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    }`}
+                  >
+                    {page}
+                  </button>
+                );
+              } else if (page === currentPage - 2 || page === currentPage + 2) {
+                return <span key={page} className="px-2 text-gray-400">...</span>;
+              }
+              return null;
+            })}
+          </div>
+
+          <button
+            onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+            disabled={currentPage === totalPages}
+            className={`px-3 py-1 rounded-lg text-sm font-medium ${
+              currentPage === totalPages
+                ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                : 'bg-blue-600 text-white hover:bg-blue-700'
+            }`}
+          >
+            Next
+          </button>
+        </div>
       </div>
       
       {/* Summary */}
