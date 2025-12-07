@@ -318,6 +318,32 @@ async def get_category_analytics(user_id: str, month: str | None = None):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.get("/analytics/category-all/{user_id}")
+async def get_all_time_category_analytics(user_id: str):
+    """Get spending by category for ALL time (no month filter)"""
+    try:
+        response = supabase.table('expenses')\
+            .select('*')\
+            .eq('user_id', user_id)\
+            .execute()
+        expenses = response.data
+        
+        if not expenses:
+            return {"success": True, "data": []}
+        
+        df = pd.DataFrame(expenses)
+        category_data = df.groupby('category').agg({
+            'amount': 'sum'
+        }).reset_index()
+
+        category_data['amount'] = category_data['amount'].astype(float)
+        category_data = category_data.sort_values('amount', ascending=False)
+        
+        return {"success": True, "data": category_data.to_dict('records')}
+    
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 @app.get("/analytics/anomalies/{user_id}")
 async def get_anomalies(user_id: str):
     """Get all anomalous expenses"""
