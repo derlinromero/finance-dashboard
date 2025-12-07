@@ -4,9 +4,24 @@ import ExpenseList from './ExpenseList';
 import CSVUpload from './CSVUpload';
 import Charts from './Charts';
 import CategoryManager from './CategoryManager';
+import MonthlyLimitForm from './MonthlyLimitForm';
 import { LogOut, Sparkles } from 'lucide-react';
 
-function Dashboard({ session, fetchExpenses, fetchCategories, expenses, categories, handleExpenseAdded, handleExpenseDeleted, handleExpenseUpdated, activeTab, setActiveTab, handleGenerateDemo, handleSignOut }) {
+function Dashboard({ 
+    session,
+    expenses,
+    categories,
+    activeTab,
+    monthlyLimit,
+    setActiveTab,
+    handleExpenseAdded,
+    handleExpenseDeleted,
+    handleExpenseUpdated,
+    handleGenerateDemo,
+    handleSignOut,
+    handleMonthlyLimit,
+    fetchExpenses,
+    fetchCategories}) {
     // Main Dashboard
     return (
         <div className="min-h-screen bg-gray-100">
@@ -84,6 +99,12 @@ function Dashboard({ session, fetchExpenses, fetchCategories, expenses, categori
                 />
                 </div>
 
+                {/* Monthly Limit Section */}
+                <MonthlyLimitForm
+                    monthlyLimit={monthlyLimit}
+                    handleMonthlyLimit={handleMonthlyLimit}
+                />
+                
                 {/* Expense List */}
                 <ExpenseList
                 expenses={expenses}
@@ -95,7 +116,10 @@ function Dashboard({ session, fetchExpenses, fetchCategories, expenses, categori
             )}
 
             {activeTab === 'analytics' && (
-            <Charts userId={session.user.id} />
+                <Charts
+                    userId={session.user.id}
+                    monthlyLimit={monthlyLimit}
+                />
             )}
 
             {activeTab === 'categories' && (
