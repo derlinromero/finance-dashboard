@@ -16,7 +16,7 @@ const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'
  */
 function Charts({ userId }) {
   const [monthlyData, setMonthlyData] = useState([]);
-  const [categoryData, setCategoryData] = useState([]);
+  const [allTimeCategoryData, setAllTimeCategoryData] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -33,11 +33,11 @@ function Charts({ userId }) {
       );
       setMonthlyData(monthlyResponse.data.data);
 
-      // Fetch category breakdown
-      const categoryResponse = await axios.get(
-        `${API_URL}/analytics/category/${userId}`
+      // Fetch All time expenses per category
+      const allTimeCategoryDataResponse = await axios.get(
+        `${API_URL}/analytics/category-all/${userId}`
       );
-      setCategoryData(categoryResponse.data.data);
+      setAllTimeCategoryData(allTimeCategoryDataResponse.data.data);
     } catch (error) {
       console.error('Error fetching analytics:', error);
     } finally {
@@ -54,9 +54,9 @@ function Charts({ userId }) {
   }
 
   const hasMonthlyData = monthlyData && monthlyData.length > 0;
-  const hasCategoryData = categoryData && categoryData.length > 0;
+  const hasAllTimeCategoryData = allTimeCategoryData && allTimeCategoryData.length > 0;
   
-  if (!hasMonthlyData && !hasCategoryData) {
+  if (!hasMonthlyData && !hasAllTimeCategoryData) {
     return (
       <div className="bg-white rounded-lg shadow-md p-6">
         <p className="text-center text-gray-500 py-8">
@@ -66,6 +66,14 @@ function Charts({ userId }) {
     );
   }
 
+  const generateColors = (count) => {
+    return Array.from({length: count}, (_, i) =>
+      `hsl(${(i * 137.508) % 360}, 70%, 50%)` // golden-angle to avoid repeats
+    );
+  };
+
+  const colors = generateColors(allTimeCategoryData.length);
+  
   return (
     <div className="space-y-6">
       {/* Monthly Trends */}
@@ -103,104 +111,34 @@ function Charts({ userId }) {
         </div>
       )}
 
-      {/* Category Breakdown */}
-      {categoryData.length > 0 && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Bar Chart */}
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <h2 className="text-xl font-bold mb-4">Spending by Category</h2>
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={categoryData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis 
-                  dataKey="category" 
-                  angle={-45}
-                  textAnchor="end"
-                  height={100}
-                  style={{ fontSize: '10px' }}
-                />
-                <YAxis 
-                  style={{ fontSize: '12px' }}
-                  tickFormatter={(value) => `$${value}`}
-                />
-                <Tooltip 
-                  formatter={(value) => [`$${value.toFixed(2)}`, 'Spent']}
-                />
-                <Bar dataKey="amount" fill="#3b82f6" />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
-
-          {/* Pie Chart */}
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <h2 className="text-xl font-bold mb-4">Category Distribution</h2>
-            <ResponsiveContainer width="100%" height={300}>
-              <PieChart>
-                <Pie
-                  data={categoryData}
-                  cx="50%"
-                  cy="50%"
-                  labelLine={false}
-                  label={({ category, percent }) => 
-                    `${category} (${(percent * 100).toFixed(0)}%)`
-                  }
-                  outerRadius={80}
-                  fill="#8884d8"
-                  dataKey="amount"
-                >
-                  {categoryData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                  ))}
-                </Pie>
-                <Tooltip 
-                  formatter={(value) => [`$${value.toFixed(2)}`, 'Amount']}
-                />
-              </PieChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-      )}
-
-      {/* Category Summary Table */}
-      {categoryData.length > 0 && (
+      {/* All-Time Category Spending */}
+      {allTimeCategoryData.length > 0 && (
         <div className="bg-white rounded-lg shadow-md p-6">
-          <h2 className="text-xl font-bold mb-4">Category Summary</h2>
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-gray-200">
-                  <th className="text-left py-3 px-4 font-semibold text-gray-700">Category</th>
-                  <th className="text-right py-3 px-4 font-semibold text-gray-700">Total Spent</th>
-                  <th className="text-right py-3 px-4 font-semibold text-gray-700">Percentage</th>
-                </tr>
-              </thead>
-              <tbody>
-                {categoryData.map((cat, index) => {
-                  const total = categoryData.reduce((sum, c) => sum + c.amount, 0);
-                  const percentage = (cat.amount / total * 100).toFixed(1);
-                  return (
-                    <tr key={cat.category} className="border-b border-gray-100">
-                      <td className="py-3 px-4">
-                        <div className="flex items-center gap-2">
-                          <div 
-                            className="w-3 h-3 rounded-full"
-                            style={{ backgroundColor: COLORS[index % COLORS.length] }}
-                          />
-                          {cat.category}
-                        </div>
-                      </td>
-                      <td className="py-3 px-4 text-right font-semibold">
-                        ${cat.amount.toFixed(2)}
-                      </td>
-                      <td className="py-3 px-4 text-right text-gray-600">
-                        {percentage}%
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+          <h2 className="text-xl font-bold mb-4">Money Spent by Category</h2>
+          <ResponsiveContainer width="100%" height={300}>
+            <BarChart data={allTimeCategoryData}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis 
+                dataKey="category" 
+                angle={-45}
+                textAnchor="end"
+                height={100}
+                style={{ fontSize: '10px' }}
+              />
+              <YAxis 
+                style={{ fontSize: '12px' }}
+                tickFormatter={(value) => `$${value}`}
+              />
+              <Tooltip 
+                formatter={(value) => [`$${value.toFixed(2)}`, 'Total Spent']}
+              />
+              <Bar dataKey="amount">
+                {allTimeCategoryData.map((entry, index) => (
+                  <Cell key={index} fill={colors[index]} />
+                ))}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
         </div>
       )}
     </div>
