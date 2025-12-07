@@ -22,8 +22,17 @@ function App() {
   const [expenses, setExpenses] = useState([]);
   const [categories, setCategories] = useState([]);
   const [activeTab, setActiveTab] = useState('overview');
+  const [monthlyLimit, setMonthlyLimit] = useState(null);
 
   const navigate = useNavigate();
+  
+  // Load monthly limit from localStorage on mount
+  useEffect(() => {
+    const savedLimit = localStorage.getItem('monthlyLimit');
+    if (savedLimit) {
+      setMonthlyLimit(parseFloat(savedLimit));
+    }
+  }, [])
   
   // Check for existing session on mount
   useEffect(() => {
@@ -204,6 +213,15 @@ function App() {
     // Refresh categories in case a new one was added during edit
     fetchCategories();
   }
+
+  const handleMonthlyLimit = (limit) => {
+    setMonthlyLimit(limit);
+    if (limit) {
+      localStorage.setItem('monthlyLimit', limit.toString());
+    } else {
+      localStorage.removeItem('monthlyLimit');
+    }
+  };
   
   const handleGenerateDemo = async () => {
     if (!window.confirm('Generate demo expenses?')) {
@@ -284,12 +302,14 @@ function App() {
               expenses={expenses}
               categories={categories}
               activeTab={activeTab}
+              monthlyLimit={monthlyLimit}
               setActiveTab={setActiveTab}
               handleExpenseAdded={handleExpenseAdded}
               handleExpenseDeleted={handleExpenseDeleted}
               handleExpenseUpdated={handleExpenseUpdated}
               handleGenerateDemo={handleGenerateDemo}
               handleSignOut={handleSignOut}
+              handleMonthlyLimit={handleMonthlyLimit}
               fetchExpenses={fetchExpenses}
               fetchCategories={fetchCategories}
             />

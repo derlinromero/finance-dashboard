@@ -2,7 +2,8 @@ import React, { useEffect, useState } from 'react';
 import axios from 'axios';
 import {
   LineChart, Line, BarChart, Bar, PieChart, Pie, Cell,
-  XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
+  XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
+  ReferenceLine
 } from 'recharts';
 import { TrendingUp } from 'lucide-react';
 
@@ -14,7 +15,7 @@ const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'
 /**
  * Charts Component - Visualize spending data
  */
-function Charts({ userId }) {
+function Charts({ userId, monthlyLimit }) {
   const [monthlyData, setMonthlyData] = useState([]);
   const [allTimeCategoryData, setAllTimeCategoryData] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -106,6 +107,23 @@ function Charts({ userId }) {
                 name="Total Spent"
                 dot={{ fill: '#3b82f6', r: 4 }}
               />
+
+              {/* Monthly Limit Reference Line */}
+              {monthlyLimit && (
+                <ReferenceLine
+                  y={monthlyLimit}
+                  stroke="red"
+                  strokeDasharray="5 5"
+                  strokeWidth={2}
+                  label={{
+                    value: `Limit: $${monthlyLimit.toFixed(2)}`,
+                    position: 'right',
+                    fill: 'red',
+                    fontSize: 12,
+                    fontWeight: 'bold'
+                  }}
+                />
+              )}
             </LineChart>
           </ResponsiveContainer>
         </div>
