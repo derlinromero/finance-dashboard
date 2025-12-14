@@ -30,9 +30,9 @@ function MonthlyLimitForm({ monthlyLimit, handleMonthlyLimit }) {
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-md p-6">
+    <div className="bg-white/90 backdrop-blur-md rounded-xl shadow-xl border border-cyan-100 p-6 hover:shadow-2xl hover:scale-[1.01] transition-all durantion-300">
       <h2 className="text-xl font-bold mb-2 flex items-center gap-2">
-        <DollarSign className="w-5 h-5 text-blue-600" />
+        <DollarSign className="w-5 h-5 text-cyan-600" />
         Set Monthly Spending Limit
       </h2>
       <p className="text-sm text-gray-600 mb-4">
@@ -58,7 +58,7 @@ function MonthlyLimitForm({ monthlyLimit, handleMonthlyLimit }) {
         <div className="flex gap-2">
           <button
             type="submit"
-            className="flex-1 bg-blue-600 text-white py-2 px-4 rounded-lg font-semibold hover:bg-blue-700 transition"
+            className="flex-1 bg-gradient-to-r from-cyan-600 to-blue-600 text-white py-2 px-4 rounded-lg font-semibold hover:from-cyan-700 hover:to-blue-700 transition-all duration-200 shadow-lg hover:shadow-xl"
           >
             Set Limit
           </button>
@@ -77,7 +77,7 @@ function MonthlyLimitForm({ monthlyLimit, handleMonthlyLimit }) {
 
       {/* Success Message */}
       {showSuccess && monthlyLimit && (
-        <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg">
+        <div className="mt-4 p-3 bg-gradient-to-r from-green-50 to-cyan-50 border border-green-200 rounded-lg">
           <p className="text-sm text-green-700 font-medium">
             ✓ Monthly limit set to ${monthlyLimit.toFixed(2)}
           </p>
@@ -86,8 +86,8 @@ function MonthlyLimitForm({ monthlyLimit, handleMonthlyLimit }) {
 
       {/* Current Limit Display */}
       {monthlyLimit && !showSuccess && (
-        <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-          <p className="text-sm text-blue-700">
+        <div className="mt-4 p-3 bg-gradient-to-r from-cyan-50 to-blue-50 border border-cyan-200 rounded-lg">
+          <p className="text-sm text-cyan-700">
             <span className="font-semibold">Current limit:</span> ${monthlyLimit.toFixed(2)}/month
           </p>
         </div>

@@ -24,30 +24,30 @@ function Dashboard({
     fetchCategories}) {
     // Main Dashboard
     return (
-        <div className="min-h-screen bg-gray-100">
+        <div className="min-h-screen bg-gradient-to-br from-slate-50 via-cyan-50 to-blue-50">
         {/* Header */}
-        <header className="bg-white shadow-sm border-b border-gray-200">
+        <header className="bg-gradient-to-r from-slate-900 via-cyan-900 to-slate-900 shadow-lg">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
             <div className="flex justify-between items-center">
                 <div>
-                <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-                    <Sparkles className="w-6 h-6 text-blue-600" />
+                <h1 className="text-2xl font-bold text-white flex items-center gap-2">
+                    <Sparkles className="w-6 h-6 text-cyan-400" />
                     AI Finance Dashboard
                 </h1>
-                <p className="text-sm text-gray-600 mt-1">
+                <p className="text-sm text-cyan-200 mt-1">
                     Welcome back, {session.user.user_metadata?.full_name || session.user.email?.split('@')[0]}
                 </p>
                 </div>
                 <div className="flex gap-2">
                 <button
                     onClick={handleGenerateDemo}
-                    className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition text-sm font-semibold"
+                    className="px-4 py-2 bg-gradient-to-r from-cyan-600 to-blue-600 text-white rounded-lg hover:from-cyan-700 hover:to-blue-700 transition-all duration-200 text-sm font-semibold shadow-lg hover:shadow-xl"
                 >
                     Generate Demo Data
                 </button>
                 <button
                     onClick={handleSignOut}
-                    className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition flex items-center gap-2"
+                    className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-all duration-200 flex items-center gap-2 shadow-lg hover:shadow-xl"
                 >
                     <LogOut className="w-4 h-4" />
                     Sign Out
@@ -58,7 +58,7 @@ function Dashboard({
         </header>
 
         {/* Navigation Tabs */}
-        <div className="bg-white border-b border-gray-200">
+        <div className="bg-white/80 backdrop-blur-md border-b border-cyan-100 shadow-sm">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <nav className="flex space-x-8">
                 {[
@@ -69,10 +69,10 @@ function Dashboard({
                 <button
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id)}
-                    className={`py-4 px-1 border-b-2 font-medium text-sm transition ${
+                    className={`py-4 px-1 border-b-2 font-medium text-sm transition-all duration-200 ${
                     activeTab === tab.id
-                        ? 'border-blue-600 text-blue-600'
-                        : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                        ? 'border-cyan-500 text-cyan-600 font-semibold'
+                        : 'border-transparent text-gray-600 hover:text-cyan-600 hover:border-cyan-300'
                     }`}
                 >
                     {tab.label}
@@ -132,9 +132,9 @@ function Dashboard({
         </main>
 
         {/* Footer */}
-        <footer className="bg-white border-t border-gray-200 mt-12">
+        <footer className="bg-gradient-to-r from-slate-900 via-cyan-900 to-slate-900 border-t border-cyan-900 mt-12">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-            <p className="text-center text-sm text-gray-500">
+            <p className="text-center text-sm text-cyan-200">
                 Built with ❤️ using React, FastAPI, Supabase & AI
             </p>
             </div>

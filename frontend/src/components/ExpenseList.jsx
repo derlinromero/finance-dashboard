@@ -180,7 +180,7 @@ function ExpenseList({ expenses, categories, onExpenseDeleted, onExpenseUpdated 
 
   if (!expenses || expenses.length === 0) {
     return (
-      <div className="bg-white rounded-lg shadow-md p-6">
+      <div className="bg-white/90 backdrop-blur-md rounded-xl shadow-xl border border-cyan-100 p-6 hover:shadow-2xl transition-all duration-300">
         <h2 className="text-xl font-bold mb-4">Total Expenses</h2>
         <p className="text-gray-500 text-center py-8">
           No expenses yet. Add your first expense above!
@@ -339,7 +339,7 @@ function ExpenseList({ expenses, categories, onExpenseDeleted, onExpenseUpdated 
                       )}
                     </>
                   ) : (
-                    <span className="inline-block px-2 py-1 text-xs font-medium bg-blue-100 text-blue-800 rounded">
+                    <span className="inline-block px-2 py-1 text-xs font-medium bg-gradient-to-r from-cyan-100 to-blue-100 text-cyan-800 rounded-full shadow-sm">
                       {expense.category}
                     </span>
                   )}
@@ -383,7 +383,7 @@ function ExpenseList({ expenses, categories, onExpenseDeleted, onExpenseUpdated 
                     <div className="flex items-center justify-center gap-2">
                       <button
                         onClick={() => startEdit(expense)}
-                        className="text-blue-600 hover:text-blue-800 transition"
+                        className="text-cyan-600 hover:text-cyan-800 transition-all duration-200"
                         title="Edit expense"
                       >
                         <Edit2 className="w-4 h-4" />
@@ -416,10 +416,10 @@ function ExpenseList({ expenses, categories, onExpenseDeleted, onExpenseUpdated 
           <button
             onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
             disabled={currentPage === 1}
-            className={`px-3 py-1 rounded-lg text-sm font-medium ${
+            className={`px-3 py-1 rounded-lg text-sm font-medium transition-all duration-200 ${
               currentPage === 1
-                ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                : 'bg-blue-600 text-white hover:bg-blue-700'
+                ? 'bg-gradient-to-r from-cyan-600 to-blue-600 text-white shadow-lg'
+                : 'bg-gray-100 text-gray-700 hover:bg-cyan-50 hover:text-cyan-700'
             }`}
           >
             Previous
@@ -437,10 +437,10 @@ function ExpenseList({ expenses, categories, onExpenseDeleted, onExpenseUpdated 
                   <button
                     key={page}
                     onClick={() => setCurrentPage(page)}
-                    className={`px-3 py-1 rounded-lg text-sm font-medium ${
+                    className={`px-3 py-1 rounded-lg text-sm font-medium transition-all duration-200 ${
                       currentPage === page
-                        ? 'bg-blue-600 text-white'
-                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                        ? 'bg-gradient-to-r from-cyan-600 to-blue-600 text-white shadow-lg'
+                        : 'bg-gray-100 text-gray-700 hover:bg-cyan-50 hover:text-cyan-700'
                     }`}
                   >
                     {page}
@@ -456,10 +456,10 @@ function ExpenseList({ expenses, categories, onExpenseDeleted, onExpenseUpdated 
           <button
             onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
             disabled={currentPage === totalPages}
-            className={`px-3 py-1 rounded-lg text-sm font-medium ${
+            className={`px-3 py-1 rounded-lg text-sm font-medium transition-all duration-200 ${
               currentPage === totalPages
-                ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                : 'bg-blue-600 text-white hover:bg-blue-700'
+                ? 'bg-gradient-to-r from-cyan-600 to-blue-600 text-white shadow-lg'
+                : 'bg-gray-100 text-gray-700 hover:bg-cyan-50 hover:text-cyan-700'
             }`}
           >
             Next

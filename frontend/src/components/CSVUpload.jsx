@@ -77,7 +77,7 @@ Netflix,15.99,2024-01-18,Entertainment`;
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-md p-6">
+    <div className="bg-white/90 backdrop-blur-md rounded-xl shadow-xl border border-cyan-100 p-6 hover:shadow-2xl transition-all duration-300">
       <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
         <Upload className="w-5 h-5" />
         Upload CSV

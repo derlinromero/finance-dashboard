@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Sparkles } from 'lucide-react';
 import { supabase } from '../supabaseClient';
 
 /**
@@ -89,10 +90,11 @@ function Auth() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-500 to-purple-600">
-      <div className="bg-white p-8 rounded-lg shadow-2xl w-96">
-        <h1 className="text-3xl font-bold text-center mb-2 text-gray-800">
-          💰 Finance Dashboard
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-cyan-900 to-slate-900">
+      <div className="bg-white/95 backdrop-blur-xl p-8 rounded-2xl shadow-2xl border border-cyan-200 w-96">
+        <h1 className="text-3xl font-bold flex items-center mb-2 bg-gradient-to-r from-cyan-600 to-blue-600 bg-clip-text text-transparent gap-2">
+          <Sparkles className="w-6 h-6 text-cyan-400" />
+          Finance Dashboard
         </h1>
         <p className="text-center text-gray-600 mb-6">
           AI-Powered Expense Tracking
@@ -108,7 +110,7 @@ function Auth() {
                 type="text"
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all duration-200"
                 placeholder="You Example"
                 required={isSignUp}
               />
@@ -123,7 +125,7 @@ function Auth() {
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all duration-200"
               placeholder="you@example.com"
               required
             />
@@ -137,7 +139,7 @@ function Auth() {
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all duration-200"
               placeholder="••••••••"
               required
               minLength={6}
@@ -157,7 +159,7 @@ function Auth() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-blue-600 text-white py-2 rounded-lg font-semibold hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+            className="w-full bg-gradient-to-r from-cyan-600 to-blue-600 text-white py-2 rounded-lg font-semibold hover:from-cyan-700 hover:to-blue-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl"
           >
             {loading ? 'Loading...' : (isSignUp ? 'Sign Up' : 'Sign In')}
           </button>
@@ -170,7 +172,7 @@ function Auth() {
               setMessage('');
               setFullName('');
             }}
-            className="text-blue-600 hover:underline text-sm"
+            className="text-cyan-600 hover:text-cyan-700 hover:underline text-sm transition-colors duration-200"
           >
             {isSignUp 
               ? 'Already have an account? Sign In' 
@@ -182,7 +184,7 @@ function Auth() {
               <button
                 onClick={handlePasswordReset}
                 disabled={loading}
-                className="text-gray-600 hover:underline text-sm disabled:opacity-50"
+                className="text-slate-600 hover:text-cyan-600 hover:underline text-sm disabled:opacity-50 transition-colors duration-200"
               >
                 Forgot password?
               </button>

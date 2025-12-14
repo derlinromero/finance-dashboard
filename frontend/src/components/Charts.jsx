@@ -75,7 +75,7 @@ function Charts({ userId, monthlyLimit }) {
 
   if (loading) {
     return (
-      <div className="bg-white rounded-lg shadow-md p-6">
+      <div className="bg-white/90 backdrop-blur-md rounded-xl shadow-xl border border-cyan-100 p-6 hover:shadow-2xl hover:scale-[1.01] transition-all durantion-300">
         <p className="text-center text-gray-500">Loading analytics...</p>
       </div>
     );
@@ -86,7 +86,7 @@ function Charts({ userId, monthlyLimit }) {
   
   if (!hasMonthlyData && !hasAllTimeCategoryData) {
     return (
-      <div className="bg-white rounded-lg shadow-md p-6">
+      <div className="bg-white/90 backdrop-blur-md rounded-xl shadow-xl border border-cyan-100 p-6 hover:shadow-2xl hover:scale-[1.01] transition-all durantion-300">
         <p className="text-center text-gray-500 py-8">
           No expenses yet. Add some expenses to see analytics!
         </p>
@@ -95,8 +95,9 @@ function Charts({ userId, monthlyLimit }) {
   }
 
   const generateColors = (count) => {
+    const baseColors = ['#06b6d4', '#0ea5e9', '#3b82f6', '#14b8a6', '#0284c7', '#06b6d4'];
     return Array.from({length: count}, (_, i) =>
-      `hsl(${(i * 137.508) % 360}, 70%, 50%)` // golden-angle to avoid repeats
+      baseColors[i % baseColors.length] // golden-angle to avoid repeats
     );
   };
 
@@ -107,9 +108,9 @@ function Charts({ userId, monthlyLimit }) {
       <div className="space-y-6">
         {/* Monthly Trends */}
         {monthlyData.length > 0 && (
-          <div className="bg-white rounded-lg shadow-md p-6">
-            <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
-              <TrendingUp className="w-5 h-5" />
+          <div className="bg-white/90 backdrop-blur-md rounded-xl shadow-xl border border-cyan-100 p-6 hover:shadow-2xl hover:scale-[1.01] transition-all durantion-300">
+            <h2 className="text-xl font-bold mb-4 flex items-center gap-2 text-slate-800">
+              <TrendingUp className="w-5 h-5 text-cyan-600" />
               Monthly Spending Trends
             </h2>
             <ResponsiveContainer width="100%" height={300}>
@@ -175,7 +176,7 @@ function Charts({ userId, monthlyLimit }) {
 
         {/* All-Time Category Spending */}
         {allTimeCategoryData.length > 0 && (
-          <div className="bg-white rounded-lg shadow-md p-6">
+          <div className="bg-white/90 backdrop-blur-md rounded-xl shadow-xl border border-cyan-100 p-6 hover:shadow-2xl hover:scale-[1.01] transition-all durantion-300">
             <h2 className="text-xl font-bold mb-4">Money Spent by Category</h2>
             <ResponsiveContainer width="100%" height={300}>
               <BarChart data={allTimeCategoryData}>
@@ -207,22 +208,22 @@ function Charts({ userId, monthlyLimit }) {
       {/* Mondal for Month Category Breakdown */}
       {showModal && (
         <div
-          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+          className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-50"
           onClick={() => setShowModal(false)}
         >
           <div
-            className="bg-white rounded-lg shadow-2xl p-6 max-w-3xl w-full mx-4 max-h-[80vh] overflow-y-auto"
+            className="bg-white/95 rounded-2xl shadow-2xl border border-cyan-200 p-6 max-w-3xl w-full mx-4 max-h-[80vh] overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Modal Header */}
             <div className="flex justify-between items-center mb-4">
               <div>
-                <h2 className="text-2xl font-bold">
+                <h2 className="text-2xl font-bold bg-gradient-to-r from-cyan-600 to-blue-600 bg-clip-text text-transparent">
                   Category Breackdown - {selectedMonth}
                 </h2>
                 {monthlyCategoryData.length > 0 && (
                   <p className="text-lg text-gray-600 mt-1">
-                    Total Spent: <span className="font-semibold text-blue-600">
+                    Total Spent: <span className="font-semibold text-cyan-600">
                       ${monthlyCategoryData.reduce((sum, c) => sum + c.amount, 0).toFixed(2)}
                     </span>
                   </p>

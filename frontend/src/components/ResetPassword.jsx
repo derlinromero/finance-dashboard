@@ -79,12 +79,12 @@ export default function ResetPassword({ onPasswordResetComplete }) {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-500 to-purple-600">
-        <div className="bg-white p-8 rounded-lg shadow-2xl w-96">
-            <h2 className="text-2xl font-bold text-center mb-2 text-gray-800">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-900 via-cyan-900 to-slate-900">
+        <div className="bg-white/95 backdrop-blur-xl p-8 rounded-2xl shadow-2xl border border-cyan-200 w-96">
+            <h2 className="text-2xl font-bold text-center mb-2 bg-gradient-to-r from-cyan-600 to-blue-600 bg-clip-text text-transparent">
                 Reset Your Password
             </h2>
-            <p className="text-center text-gray-600 mb-6 text-sm">
+            <p className="text-center text-salte-600 mb-6 text-sm">
                 Enter your new password below
             </p>
 
@@ -98,7 +98,7 @@ export default function ResetPassword({ onPasswordResetComplete }) {
                         placeholder="Enter new password"
                         value={newPassword}
                         onChange={(e) => setNewPassword(e.target.value)}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all duration-200"
                         required
                         minLength={6}
                         disabled={loading}
@@ -114,7 +114,7 @@ export default function ResetPassword({ onPasswordResetComplete }) {
                         placeholder="Confirm new password"
                         value={confirmPassword}
                         onChange={(e) => setConfirmPassword(e.target.value)}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all duration-200"
                         required
                         minLength={6}
                         disabled={loading}
@@ -125,7 +125,7 @@ export default function ResetPassword({ onPasswordResetComplete }) {
                     <div className={`text-sm p-3 rounded ${
                         message.includes('❌')
                           ? 'bg-red-100 text-red-700'
-                          : 'bg-green-100 text-gree-700'
+                          : 'bg-green-100 text-green-700'
                     }`}>
                         {message}
                     </div>
@@ -134,7 +134,7 @@ export default function ResetPassword({ onPasswordResetComplete }) {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full bg-blue-600 text-white py-2 rounded-lg font-semibold hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full bg-gradient-to-r from-cyan-600 to-blue-600 text-white py-2 rounded-lg font-semibold hover:from-cyan-700 hover:to-blue-700 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl"
                 >
                     {loading ? 'Updating...' : 'Update Password'}
                 </button>

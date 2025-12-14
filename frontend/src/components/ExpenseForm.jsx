@@ -78,7 +78,7 @@ function ExpenseForm({ userId, categories, onExpenseAdded }) {
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-md p-6">
+    <div className="bg-white/90 backdrop-blur-md rounded-xl shadow-xl border border-cyan-100 p-6 hover:shadow-2xl transition-all duration-300">
       <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
         <PlusCircle className="w-5 h-5" />
         Add New Expense
@@ -183,7 +183,7 @@ function ExpenseForm({ userId, categories, onExpenseAdded }) {
         <button
           type="submit"
           disabled={loading}
-          className="w-full bg-blue-600 text-white py-2 rounded-lg font-semibold hover:bg-blue-700 transition disabled:opacity-50"
+          className="w-full bg-gradient-to-r from-cyan-600 to-blue-600 text-white py-2 rounded-lg font-semibold hover:from-cyan-700 hover:to-blue-700 transition-all duration-200"
         >
           {loading ? 'Adding...' : 'Add Expense'}
         </button>
