@@ -118,6 +118,9 @@ function Auth() {
           )}
 
           <div>
+            <div className="mb-2 p-3 bg-cyan-50 border border-cyan-200 rounded-lg text-cyan-800 text-sm">
+              💡 Please ensure only one tab of the system is open. If you have multiple tabs, close the others to avoid conflicts.
+            </div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Email
             </label>
