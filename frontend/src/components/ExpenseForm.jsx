@@ -56,6 +56,10 @@ function ExpenseForm({ userId, categories, onExpenseAdded }) {
         date: formattedDate
       });
 
+      const newExpense = Array.isArray(response.data.data)
+        ? response.data.data[0]
+        : response.data.data;
+
       // Show success notification
       alert("✅ Expense added successfully!")
 
@@ -67,8 +71,9 @@ function ExpenseForm({ userId, categories, onExpenseAdded }) {
       setAiSuggestion('');
       setShowSuggestion(false);
 
-      // Notify parent component
-      onExpenseAdded(response.data.data);
+      if (onExpenseAdded && newExpense) {
+        onExpenseAdded(newExpense);
+      }
     } catch (error) {
       console.error('Error adding expense:', error);
       alert('Failed to add expense. Please try again');
@@ -108,7 +113,10 @@ function ExpenseForm({ userId, categories, onExpenseAdded }) {
               type="number"
               step="0.01"
               value={amount}
-              onChange={(e) => setAmount(e.target.value)}
+              onChange={(e) => {
+                const val = e.target.value;
+                if (val === '' || parseFloat(val) >= 0) setAmount(val);
+              }}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
               placeholder="0.00"
               required

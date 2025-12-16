@@ -428,52 +428,6 @@ async def upload_csv(user_id: str, file: UploadFile = File(...)):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-# ==================== DEMO DATA ====================
-
-@app.post("/demo/generate/{user_id}")
-async def generate_demo_data(user_id: str):
-    """Generate demo expenses for testing"""
-    import random
-    from datetime import timedelta
-    
-    demo_expenses = [
-        {"title": "Walmart Groceries", "amount": 85.50, "category": "Groceries"},
-        {"title": "Starbucks Coffee", "amount": 5.75, "category": "Dining Out"},
-        {"title": "Shell Gas Station", "amount": 45.00, "category": "Transportation"},
-        {"title": "Netflix Subscription", "amount": 15.99, "category": "Entertainment"},
-        {"title": "Electric Bill", "amount": 120.00, "category": "Utilities"},
-        {"title": "Amazon Purchase", "amount": 67.30, "category": "Shopping"},
-        {"title": "Gym Membership", "amount": 40.00, "category": "Fitness"},
-        {"title": "Uber Ride", "amount": 18.50, "category": "Transportation"},
-        {"title": "Target Shopping", "amount": 95.20, "category": "Shopping"},
-        {"title": "Restaurant Dinner", "amount": 78.00, "category": "Dining Out"},
-    ]
-    
-    try:
-        added = []
-        today = date.today()
-        
-        for i, exp in enumerate(demo_expenses):
-            expense_date = today - timedelta(days=random.randint(1, 60))
-            
-            data = {
-                'user_id': user_id,
-                'title': exp['title'],
-                'amount': exp['amount'],
-                'category': exp['category'],
-                'date': expense_date.isoformat(),
-                'ai_suggested_category': exp['category'],
-                'is_anomaly': False
-            }
-            
-            response = supabase.table('expenses').insert(data).execute()
-            added.append(response.data[0])
-        
-        return {"success": True, "expenses_added": len(added), "data": added}
-    
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)

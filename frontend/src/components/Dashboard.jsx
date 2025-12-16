@@ -17,7 +17,6 @@ function Dashboard({
     handleExpenseAdded,
     handleExpenseDeleted,
     handleExpenseUpdated,
-    handleGenerateDemo,
     handleSignOut,
     handleMonthlyLimit,
     fetchExpenses,
@@ -40,14 +39,8 @@ function Dashboard({
                 </div>
                 <div className="flex gap-2">
                 <button
-                    onClick={handleGenerateDemo}
-                    className="px-4 py-2 bg-gradient-to-r from-cyan-600 to-blue-600 text-white rounded-lg hover:from-cyan-700 hover:to-blue-700 transition-all duration-200 text-sm font-semibold shadow-lg hover:shadow-xl"
-                >
-                    Generate Demo Data
-                </button>
-                <button
                     onClick={handleSignOut}
-                    className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-all duration-200 flex items-center gap-2 shadow-lg hover:shadow-xl"
+                    className="px-4 py-2 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-lg font-semibold hover:from-red-600 hover:to-red-700 transition-all duration-200 flex items-center gap-2 shadow-lg hover:shadow-xl"
                 >
                     <LogOut className="w-4 h-4" />
                     Sign Out

@@ -353,7 +353,10 @@ function ExpenseList({ expenses, categories, onExpenseDeleted, onExpenseUpdated 
                       step="0.01"
                       min="0"
                       value={editForm.amount}
-                      onChange={(e) => setEditForm({ ...editForm, amount: e.target.value})}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        if (val === '' || parseFloat(val) >= 0) setEditForm({ ...editForm, amount: val});
+                      }}
                       className="w-full px-2 py-1 border border-gray-300 rounded text-sm text-right"/>
                   ) : (
                     `$${parseFloat(expense.amount).toFixed(2)}`

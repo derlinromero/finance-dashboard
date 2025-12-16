@@ -201,6 +201,32 @@ function App() {
     localStorage.setItem('passwordReset',Date.now());
   };
 
+    const handleExpenseAdded = (newExpense) => {
+    setExpenses([newExpense, ...expenses]);
+    fetchCategories(); // Refresh categories in case a new one was created
+  };
+
+  const handleExpenseDeleted = (expenseId) => {
+    setExpenses(expenses.filter((e) => e.id !== expenseId));
+  };
+
+  const handleExpenseUpdated = (updateExpense) => {
+    setExpenses(expenses.map((e) =>
+      e.id === updateExpense.id ? updateExpense : e
+    ));
+    // Refresh categories in case a new one was added during edit
+    fetchCategories();
+  }
+
+  const handleMonthlyLimit = (limit) => {
+    setMonthlyLimit(limit);
+    if (limit) {
+      localStorage.setItem('monthlyLimit', limit.toString());
+    } else {
+      localStorage.removeItem('monthlyLimit');
+    }
+  };
+
   /* ---------------------------------- */
   /* Loading                            */
   /* ---------------------------------- */
@@ -251,6 +277,10 @@ function App() {
               activeTab={activeTab}
               monthlyLimit={monthlyLimit}
               setActiveTab={setActiveTab}
+              handleExpenseAdded={handleExpenseAdded}
+              handleExpenseDeleted={handleExpenseDeleted}
+              handleExpenseUpdated={handleExpenseUpdated}
+              handleMonthlyLimit={handleMonthlyLimit}
               fetchExpenses={fetchExpenses}
               fetchCategories={fetchCategories}
               handleSignOut={handleSignOut}
