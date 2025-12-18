@@ -101,12 +101,17 @@ function Auth() {
           Expense Tracking
         </p>
 
+        <div className="mb-4 p-3 bg-cyan-50 border border-cyan-200 rounded-lg text-cyan-800 text-sm flex gap-2">
+          <span>💡</span> 
+          <span>
+            Please ensure only <strong>one tab</strong> of the system is open.
+            Close the others to avoid conflicts.
+          </span>
+        </div>
+        
         <form onSubmit={handleAuth} className="space-y-4">
           {isSignUp && (
             <div>
-              <div className="mb-2 p-3 bg-cyan-50 border border-cyan-200 rounded-lg text-cyan-800 text-sm">
-              💡 Please ensure only one tab of the system is open. If you have multiple tabs, close the others to avoid conflicts.
-              </div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Full Name
               </label>
