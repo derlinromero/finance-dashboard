@@ -37,6 +37,7 @@ function Auth() {
           email,
           password,
           options: {
+            emailRedirectTo: window.location.origin,
             data: {
               full_name: fullName,
             }
@@ -97,12 +98,15 @@ function Auth() {
           Finance Dashboard
         </h1>
         <p className="text-center text-gray-600 mb-6">
-          AI-Powered Expense Tracking
+          Expense Tracking
         </p>
 
         <form onSubmit={handleAuth} className="space-y-4">
           {isSignUp && (
             <div>
+              <div className="mb-2 p-3 bg-cyan-50 border border-cyan-200 rounded-lg text-cyan-800 text-sm">
+              💡 Please ensure only one tab of the system is open. If you have multiple tabs, close the others to avoid conflicts.
+              </div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Full Name
               </label>
@@ -118,9 +122,6 @@ function Auth() {
           )}
 
           <div>
-            <div className="mb-2 p-3 bg-cyan-50 border border-cyan-200 rounded-lg text-cyan-800 text-sm">
-              💡 Please ensure only one tab of the system is open. If you have multiple tabs, close the others to avoid conflicts.
-            </div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Email
             </label>

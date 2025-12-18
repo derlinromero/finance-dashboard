@@ -29,9 +29,8 @@ def read_root():
 
 @app.post("/expenses")
 async def create_expense(expense: ExpenseCreate):
-    """Create a new expense with AI category suggestion"""
+    """Create a new expense"""
     try:
-        # Use AI suggestion if no category provided
         final_category = expense.category if expense.category else "Uncategorized"
         
         # Auto-create category if it doesn't exist
