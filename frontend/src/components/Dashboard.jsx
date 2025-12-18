@@ -6,6 +6,8 @@ import Charts from './Charts';
 import CategoryManager from './CategoryManager';
 import MonthlyLimitForm from './MonthlyLimitForm';
 import { LogOut, Sparkles } from 'lucide-react';
+import { useSingleTabGuard } from '../hooks/useSingleTabGuard';
+import SingleTabWarning from './SingleTabWarning';
 
 function Dashboard({ 
     session,
@@ -21,6 +23,10 @@ function Dashboard({
     handleMonthlyLimit,
     fetchExpenses,
     fetchCategories}) {
+    
+    // Detect duplicate tab
+    const isDuplicateTab = useSingleTabGuard(session?.user?.id);
+    
     // Main Dashboard
     return (
         <div className="min-h-screen bg-gradient-to-br from-slate-50 via-cyan-50 to-blue-50">
@@ -77,6 +83,10 @@ function Dashboard({
 
         {/* Main Content */}
         <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+            {/* Duplicate tab warning */}
+            {isDuplicateTab && <SingleTabWarning />}
+
             {activeTab === 'overview' && (
             <div className="space-y-6">
                 {/* Add Expense and CSV Upload */}
