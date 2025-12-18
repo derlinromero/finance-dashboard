@@ -53,9 +53,6 @@ async def create_expense(expense: ExpenseCreate):
             except Exception as cat_error:
                 print(f"Note: Category creation skipped - {cat_error}")
         
-        # Simple anomaly detection: flag if > $500
-        is_anomaly = expense.amount > 500
-        
         # Convert date to string properly
         if isinstance(expense.date, str):
             date_str = expense.date
@@ -69,8 +66,7 @@ async def create_expense(expense: ExpenseCreate):
             'amount': float(expense.amount),
             'category': final_category,
             'date': date_str,
-            'ai_suggested_category': None,
-            'is_anomaly': is_anomaly
+            'category': None
         }
         
         response = supabase.table('expenses').insert(data).execute()
@@ -318,22 +314,6 @@ async def get_all_time_category_analytics(user_id: str):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.get("/analytics/anomalies/{user_id}")
-async def get_anomalies(user_id: str):
-    """Get all anomalous expenses"""
-    try:
-        response = supabase.table('expenses')\
-            .select('*')\
-            .eq('user_id', user_id)\
-            .eq('is_anomaly', True)\
-            .order('date', desc=True)\
-            .execute()
-        
-        return {"success": True, "data": response.data}
-    
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
 # ==================== CSV UPLOAD ====================
 
 @app.post("/upload/csv/{user_id}")
@@ -388,9 +368,6 @@ async def upload_csv(user_id: str, file: UploadFile = File(...)):
                     except:
                         pass
                 
-                # Check anomaly
-                is_anomaly = float(row['amount']) > 500
-                
                 # Insert
                 data = {
                     'user_id': user_id,
@@ -398,8 +375,7 @@ async def upload_csv(user_id: str, file: UploadFile = File(...)):
                     'amount': float(row['amount']),
                     'category': category,
                     'date': expense_date.isoformat(),
-                    'ai_suggested_category': None,
-                    'is_anomaly': is_anomaly
+                    'category': None
                 }
                 
                 response = supabase.table('expenses').insert(data).execute()

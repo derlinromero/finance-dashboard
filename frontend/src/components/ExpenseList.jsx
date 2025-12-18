@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Trash2, AlertTriangle, Edit2, X, Save, ChevronUp, ChevronDown, ChevronsUpDown } from 'lucide-react';
+import { Trash2, Edit2, X, Save, ChevronUp, ChevronDown, ChevronsUpDown } from 'lucide-react';
 import axios from 'axios';
 import { format, previousDay} from 'date-fns';
 
@@ -270,9 +270,7 @@ function ExpenseList({ expenses, categories, onExpenseDeleted, onExpenseUpdated 
             {sortedAndPaginatedExpenses.map((expense) => (
               <tr 
                 key={expense.id} 
-                className={`border-b border-gray-100 hover:bg-gray-50 ${
-                  expense.is_anomaly ? 'bg-red-50' : ''
-                }`}
+                className="border-b border-gray-100 hover:bg-gray-50"
               >
                 {/* Date Colum */}
                 <td className="py-3 px-4 text-sm text-gray-600">
@@ -298,15 +296,7 @@ function ExpenseList({ expenses, categories, onExpenseDeleted, onExpenseUpdated 
                       className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
                     />
                   ) : (
-                    <div className="flex items-center gap-2">
-                      <span className="text-gray-900">{expense.title}</span>
-                      {expense.is_anomaly && (
-                        <AlertTriangle
-                          className="w-4 h-4 text-red-500"
-                          title="Unusual expense amount detected"
-                        />
-                      )}
-                    </div>
+                    <span className="text-gray-900">{expense.title}</span>
                   )}
                 </td>
 
