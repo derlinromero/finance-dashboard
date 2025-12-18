@@ -128,7 +128,7 @@ function Dashboard({
         <footer className="bg-gradient-to-r from-slate-900 via-cyan-900 to-slate-900 border-t border-cyan-900 mt-12">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
             <p className="text-center text-sm text-cyan-200">
-                Built with ❤️ using React, FastAPI, Supabase & AI
+                Built using React, FastAPI & Supabase
             </p>
             </div>
         </footer>
