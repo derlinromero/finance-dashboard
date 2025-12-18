@@ -6,7 +6,7 @@ const API_URL = process.env.REACT_APP_API_URL;
 
 /**
  * CSVUpload Component - Upload CSV files with expenses
- * Expected CSV format: title, amount, date (category is optional)
+ * Expected CSV format: title, amount, date (optional)
  */
 function CSVUpload({ userId, onUploadComplete }) {
   const [file, setFile] = useState(null);
@@ -85,20 +85,20 @@ Netflix,15.99,2024-01-18,Entertainment`;
 
       <div className="space-y-4">
         {/* Instructions */}
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-          <h3 className="font-semibold text-blue-900 mb-2">CSV Format</h3>
-          <p className="text-sm text-blue-800 mb-2">
+        <div className="bg-gradient-to-r from-cyan-50 to-blue-50 border border-cyan-200 rounded-lg p-4">
+          <h3 className="font-semibold text-cyan-900 mb-2">CSV Format</h3>
+          <p className="text-sm text-cyan-800 mb-2">
             Your CSV should have these columns:
           </p>
-          <ul className="text-sm text-blue-800 list-disc list-inside space-y-1">
+          <ul className="text-sm text-cyan-800 list-disc list-inside space-y-1">
             <li><strong>title</strong> - Description of expense</li>
             <li><strong>amount</strong> - Cost in dollars (e.g., 45.50)</li>
             <li><strong>date</strong> - Date (YYYY-MM-DD format)</li>
-            <li><strong>category</strong> - Optional (AI will suggest if empty)</li>
+            <li><strong>category</strong> - Optional (defaults to "Uncategorized")</li>
           </ul>
           <button
             onClick={downloadSampleCSV}
-            className="mt-3 text-sm text-blue-600 hover:underline flex items-center gap-1"
+            className="mt-3 text-sm text-cyan-600 hover:text-cyan-700 hover:underline flex items-center gap-1 transition-colors duration-200"
           >
             <FileText className="w-4 h-4" />
             Download sample CSV
@@ -114,7 +114,7 @@ Netflix,15.99,2024-01-18,Entertainment`;
             type="file"
             accept=".csv"
             onChange={handleFileChange}
-            className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+            className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-cyan-50 file:text-cyan-700 hover:file:bg-cyan-100 file:transition-colors file:duration-200"
           />
           {file && (
             <p className="mt-2 text-sm text-gray-600">
@@ -127,7 +127,7 @@ Netflix,15.99,2024-01-18,Entertainment`;
         <button
           onClick={handleUpload}
           disabled={!file || uploading}
-          className="w-full bg-green-600 text-white py-2 rounded-lg font-semibold hover:bg-green-700 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+          className="w-full bg-gradient-to-r from-green-600 to-teal-600 text-white py-2 rounded-lg font-semibold hover:from-green-700 hover:to-teal-700 transition-all duration-200 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
         >
           {uploading ? (
             <>Processing...</>

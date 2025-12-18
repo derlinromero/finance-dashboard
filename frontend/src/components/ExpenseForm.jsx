@@ -5,45 +5,23 @@ import { PlusCircle, Sparkles } from 'lucide-react';
 const API_URL = process.env.REACT_APP_API_URL;
 
 /**
- * ExpenseForm Component - Manual expense entry with AI category suggestions
+ * ExpenseForm Component - Manual expense entry
  */
 function ExpenseForm({ userId, categories, onExpenseAdded }) {
   const [title, setTitle] = useState('');
   const [amount, setAmount] = useState('');
   const [category, setCategory] = useState('');
+  const [newCategory, setNewCategory] = useState('');
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
-  const [aiSuggestion, setAiSuggestion] = useState('');
   const [loading, setLoading] = useState(false);
-  const [showSuggestion, setShowSuggestion] = useState(false);
-
-  // Get AI suggestion when title and amount are entered
-  useEffect(() => {
-    const getSuggestion = async () => {
-      if (title.length > 3 && amount > 0) {
-        try {
-          const response = await axios.post(`${API_URL}/categories/suggest`, {
-            title,
-            amount: parseFloat(amount),
-            user_id: userId
-          });
-          setAiSuggestion(response.data.suggested_category);
-          setShowSuggestion(true);
-        } catch (error) {
-          console.error('Error getting suggestion:', error);
-        }
-      }
-    };
-
-    // Debounce the API call
-    const timer = setTimeout(getSuggestion, 500);
-    return () => clearTimeout(timer);
-  }, [title, amount, userId]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
 
     try {
+
+      const categoryToSubmit = category === '__new__' ? newCategory : category;
 
       // Ensure date is in YYYY-MM-DD format
       const formattedDate = date.includes('T') ? date.split('T')[0] : date;
@@ -52,7 +30,7 @@ function ExpenseForm({ userId, categories, onExpenseAdded }) {
         user_id: userId,
         title: title.trim(),
         amount: parseFloat(amount),
-        category: category || aiSuggestion || 'Uncategorized',
+        category: categoryToSubmit || 'Uncategorized',
         date: formattedDate
       });
 
@@ -67,9 +45,8 @@ function ExpenseForm({ userId, categories, onExpenseAdded }) {
       setTitle('');
       setAmount('');
       setCategory('');
+      setNewCategory('');
       setDate(new Date().toISOString().split('T')[0]);
-      setAiSuggestion('');
-      setShowSuggestion(false);
 
       if (onExpenseAdded && newExpense) {
         onExpenseAdded(newExpense);
@@ -81,7 +58,7 @@ function ExpenseForm({ userId, categories, onExpenseAdded }) {
       setLoading(false);
     }
   };
-
+  
   return (
     <div className="bg-white/90 backdrop-blur-md rounded-xl shadow-xl border border-cyan-100 p-6 hover:shadow-2xl transition-all duration-300">
       <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
@@ -124,42 +101,31 @@ function ExpenseForm({ userId, categories, onExpenseAdded }) {
           </div>
         </div>
 
-        {/* AI Suggestion Banner */}
-        {showSuggestion && aiSuggestion && (
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 flex items-start gap-2">
-            <Sparkles className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
-            <div className="flex-1">
-              <p className="text-sm text-blue-900">
-                <span className="font-semibold">AI Suggests:</span> {aiSuggestion}
-              </p>
-              <button
-                type="button"
-                onClick={() => setCategory(aiSuggestion)}
-                className="text-xs text-blue-600 hover:underline mt-1"
-              >
-                Use this category
-              </button>
-            </div>
-          </div>
-        )}
-
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Category
             </label>
             <select
-              value={category}
-              onChange={(e) => setCategory(e.target.value)}
+              value={category === '__new__' ? '__new__' : category}
+              onChange={(e) => {
+                const value = e.target.value;
+                if (value === '__new__') {
+                  setCategory('__new__');
+                } else {
+                  setCategory(value);
+                  setNewCategory('');
+                }
+              }}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
             >
-              <option value="">Choose or let AI suggest...</option>
+              <option value="">Select a category...</option>
               {categories.map((cat) => (
                 <option key={cat.id} value={cat.name}>
                   {cat.name}
                 </option>
               ))}
-              <option value="__new__" className="font-semibold text-blue-600">
+              <option value="__new__" className="font-semibold text-cyan-700">
                 + Add New Category
               </option>
             </select>
@@ -167,8 +133,8 @@ function ExpenseForm({ userId, categories, onExpenseAdded }) {
               <input
                 type="text"
                 placeholder="Enter new category name..."
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focur:ring-2 focus:ring-blue-500 mt-2"
-                onChange={(e) => setCategory(e.target.value)}
+                className="w-full px-3 py-2 border border-cyan-300 rounded-lg focur:ring-2 focus:ring-cyan-500 focus:border-transparent mt-2 transition-all duration-200"
+                onChange={(e) => setNewCategory(e.target.value)}
                 autoFocus
               />
             )}
@@ -182,7 +148,7 @@ function ExpenseForm({ userId, categories, onExpenseAdded }) {
               type="date"
               value={date}
               onChange={(e) => setDate(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-cyan-500 focus:border-transparent transition-all duration-200"
               required
             />
           </div>
@@ -191,7 +157,7 @@ function ExpenseForm({ userId, categories, onExpenseAdded }) {
         <button
           type="submit"
           disabled={loading}
-          className="w-full bg-gradient-to-r from-cyan-600 to-blue-600 text-white py-2 rounded-lg font-semibold hover:from-cyan-700 hover:to-blue-700 transition-all duration-200"
+          className="w-full bg-gradient-to-r from-cyan-600 to-blue-600 text-white py-2 rounded-lg font-semibold hover:from-cyan-700 hover:to-blue-700 transition-all duration-200 shadow-lg hover:shadow-xl disabled:opacity-50"
         >
           {loading ? 'Adding...' : 'Add Expense'}
         </button>

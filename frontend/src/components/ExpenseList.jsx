@@ -14,6 +14,7 @@ function ExpenseList({ expenses, categories, onExpenseDeleted, onExpenseUpdated 
     title: '',
     amount: '',
     category: '',
+    newCategory: '',
     date: ''
   });
 
@@ -135,6 +136,7 @@ function ExpenseList({ expenses, categories, onExpenseDeleted, onExpenseUpdated 
       title: expense.title,
       amount: expense.amount,
       category: expense.category,
+      newCategory: '',
       date: dateStr
     });
   };
@@ -144,12 +146,17 @@ function ExpenseList({ expenses, categories, onExpenseDeleted, onExpenseUpdated 
     setEditForm({title: '', amount: '', category: '', date: ''});
   };
 
+  const categoryToSubmit =
+    editForm.category === '__new__'
+      ? editForm.newCategory.trim()
+      : editForm.category;
+
   const saveEdit = async (expenseId) => {
     try {
       const payload = {
         title: editForm.title.trim(),
         amount: parseFloat(editForm.amount),
-        category: editForm.category,
+        category: categoryToSubmit || editForm.category,
         date: editForm.date
       };
       
@@ -312,9 +319,9 @@ function ExpenseList({ expenses, categories, onExpenseDeleted, onExpenseUpdated 
                         onChange={(e) => {
                           const value = e.target.value;
                           if (value === '__new__') {
-                            setEditForm({ ...editForm, category: '__new__'});
+                            setEditForm({ ...editForm, category: '__new__', newCategory: ''});
                           } else {
-                            setEditForm({ ...editForm, category: value});
+                            setEditForm({ ...editForm, category: value, newCategory: ''});
                           }
                         }}
                         className="w-full px-2 py-1 border border-gray-300 rounded text-sm"
@@ -333,7 +340,7 @@ function ExpenseList({ expenses, categories, onExpenseDeleted, onExpenseUpdated 
                           type="text"
                           placeholder="Enter new category name..."
                           className="w-full px-2 py-1 border border-gray-300 rounded text-sm mt-1"
-                          onChange={(e) => setEditForm({ ...editForm, category: e.target.value})}
+                          onChange={(e) => setEditForm({ ...editForm, newCategory: e.target.value})}
                           autoFocus
                         />
                       )}

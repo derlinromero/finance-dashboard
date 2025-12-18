@@ -38,8 +38,3 @@ class CategoryCreate(BaseModel):
 
 class CategoryUpdate(BaseModel):
     name: str
-
-class CategorySuggestionRequest(BaseModel):
-    title: str
-    amount: float
-    user_id: str

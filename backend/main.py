@@ -1,18 +1,14 @@
 from fastapi import FastAPI, HTTPException, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from models import (
-    ExpenseCreate, ExpenseUpdate, CategoryCreate, CategorySuggestionRequest, CategoryUpdate
+    ExpenseCreate, ExpenseUpdate, CategoryCreate, CategoryUpdate
 )
 from database import get_supabase
-from ai_categorizer import (
-    suggest_category_ai, save_category_correction, detect_anomaly
-)
 import pandas as pd
 import io
 from datetime import datetime, date
-from typing import List
 
-app = FastAPI(title="AI Finance Dashboard API")
+app = FastAPI(title="Finance Dashboard API")
 
 # Enable CORS for frontend
 app.add_middleware(
@@ -27,7 +23,7 @@ supabase = get_supabase()
 
 @app.get("/")
 def read_root():
-    return {"message": "AI Finance Dashboard API", "status": "running"}
+    return {"message": "Finance Dashboard API", "status": "running"}
 
 # ==================== EXPENSES ====================
 
@@ -35,11 +31,8 @@ def read_root():
 async def create_expense(expense: ExpenseCreate):
     """Create a new expense with AI category suggestion"""
     try:
-        # Get AI suggestion
-        ai_category = suggest_category_ai(expense.title, expense.amount, expense.user_id)
-        
         # Use AI suggestion if no category provided
-        final_category = expense.category if expense.category else ai_category
+        final_category = expense.category if expense.category else "Uncategorized"
         
         # Auto-create category if it doesn't exist
         if final_category and final_category != 'Uncategorized':
@@ -60,8 +53,8 @@ async def create_expense(expense: ExpenseCreate):
             except Exception as cat_error:
                 print(f"Note: Category creation skipped - {cat_error}")
         
-        # Check for anomaly
-        is_anomaly = detect_anomaly(expense.amount, final_category, expense.user_id)
+        # Simple anomaly detection: flag if > $500
+        is_anomaly = expense.amount > 500
         
         # Convert date to string properly
         if isinstance(expense.date, str):
@@ -76,22 +69,13 @@ async def create_expense(expense: ExpenseCreate):
             'amount': float(expense.amount),
             'category': final_category,
             'date': date_str,
-            'ai_suggested_category': ai_category,
+            'ai_suggested_category': None,
             'is_anomaly': is_anomaly
         }
         
         response = supabase.table('expenses').insert(data).execute()
 
-        # If user chose different category than AI, save correction
-        if expense.category and expense.category != ai_category:
-            save_category_correction(
-                expense.user_id, 
-                expense.title, 
-                ai_category, 
-                expense.category
-            )
-        
-        return {"success": True, "data": response.data[0], "ai_suggested": ai_category}
+        return {"success": True, "data": response.data[0]}
     
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -131,7 +115,7 @@ async def update_expense(expense_id: str, expense: ExpenseUpdate):
                 # Get user_id fom the expense being updated
                 expense_data = supabase.table('expenses').select('user_id').eq('id', expense_id).execute()
                 if expense_data.data and len(expense_data.data) > 0:
-                    user_id = expense_data.data[0]['user_id'] # type: ignore
+                    user_id = expense_data.data[0]['user_id']
 
                     # Check if category exists
                     existing = supabase.table('categories')\
@@ -228,16 +212,6 @@ async def delete_category(category_id: str):
             .execute()
         
         return {"success": True}
-    
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-@app.post("/categories/suggest")
-async def suggest_category(request: CategorySuggestionRequest):
-    """Get AI category suggestion"""
-    try:
-        suggestion = suggest_category_ai(request.title, request.amount, request.user_id)
-        return {"success": True, "suggested_category": suggestion}
     
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -393,12 +367,29 @@ async def upload_csv(user_id: str, file: UploadFile = File(...)):
                 # Get or suggest category
                 category = row.get('category', None)
                 if pd.isna(category) or not category:
-                    category = suggest_category_ai(row['title'], float(row['amount']), user_id)
+                    category = "Uncategorized"
                 else:
-                    category = str(category)
+                    category = str(category).strip()
+
+                # Auto-create category if needed
+                if category and category != 'Uncategorized':
+                    try:
+                        existing = supabase.table('categories')\
+                            .select('*')\
+                            .eq('user_id', user_id)\
+                            .eq('name', category)\
+                            .execute()
+                        
+                        if not existing.data or len(existing.data) == 0:
+                            supabase.table('categories').insert({
+                                'user_id': user_id,
+                                'name': category
+                            }).execute()
+                    except:
+                        pass
                 
                 # Check anomaly
-                is_anomaly = detect_anomaly(float(row['amount']), category, user_id)
+                is_anomaly = float(row['amount']) > 500
                 
                 # Insert
                 data = {
@@ -407,7 +398,7 @@ async def upload_csv(user_id: str, file: UploadFile = File(...)):
                     'amount': float(row['amount']),
                     'category': category,
                     'date': expense_date.isoformat(),
-                    'ai_suggested_category': category,
+                    'ai_suggested_category': None,
                     'is_anomaly': is_anomaly
                 }
                 
