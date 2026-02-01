@@ -64,8 +64,7 @@ async def create_expense(expense: ExpenseCreate):
             'title': expense.title,
             'amount': float(expense.amount),
             'category': final_category,
-            'date': date_str,
-            'category': None
+            'date': date_str
         }
         
         response = supabase.table('expenses').insert(data).execute()
@@ -373,8 +372,7 @@ async def upload_csv(user_id: str, file: UploadFile = File(...)):
                     'title': row['title'],
                     'amount': float(row['amount']),
                     'category': category,
-                    'date': expense_date.isoformat(),
-                    'category': None
+                    'date': expense_date.isoformat()
                 }
                 
                 response = supabase.table('expenses').insert(data).execute()
