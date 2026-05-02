@@ -1,9 +1,8 @@
-from fastapi import FastAPI, HTTPException, UploadFile, File
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from models import ExpenseCreate, ExpenseUpdate, CategoryCreate, CategoryUpdate
 from database import get_supabase
 import pandas as pd
-import io
 from datetime import datetime, date
 
 app = FastAPI(title="SpendWise API")
@@ -425,86 +424,7 @@ async def get_all_time_category_analytics(user_id: str, start_date: str | None =
 
 
 # ==================== CSV UPLOAD ====================
-
-
-@app.post("/upload/csv/{user_id}")
-async def upload_csv(user_id: str, file: UploadFile = File(...)):
-    """
-    Upload CSV file with expenses
-    Expected columns: title, amount, date
-    Optional: category
-    """
-    try:
-        contents = await file.read()
-        df = pd.read_csv(io.StringIO(contents.decode("utf-8")))
-
-        # Validate required columns
-        required_cols = ["title", "amount", "date"]
-        if not all(col in df.columns for col in required_cols):
-            raise HTTPException(
-                status_code=400, detail=f"CSV must contain columns: {required_cols}"
-            )
-
-        # Process each row
-        expenses_added = []
-        errors = []
-
-        for idx, row in df.iterrows():
-            try:
-                # Parse date
-                expense_date = pd.to_datetime(row["date"]).date()
-
-                # Get or suggest category
-                category = row.get("category", None)
-                if pd.isna(category) or not category:
-                    category = "Uncategorized"
-                else:
-                    category = str(category).strip()
-
-                # Auto-create category if needed
-                if category and category != "Uncategorized":
-                    try:
-                        existing = (
-                            supabase.table("categories")
-                            .select("*")
-                            .eq("user_id", user_id)
-                            .eq("name", category)
-                            .execute()
-                        )
-
-                        if not existing.data or len(existing.data) == 0:
-                            supabase.table("categories").insert(
-                                {"user_id": user_id, "name": category}
-                            ).execute()
-                    except:
-                        pass
-
-                # Insert
-                data = {
-                    "user_id": user_id,
-                    "title": row["title"],
-                    "amount": float(row["amount"]),
-                    "category": category,
-                    "date": expense_date.isoformat(),
-                }
-
-                response = supabase.table("expenses").insert(data).execute()
-                expenses_added.append(response.data[0])
-
-            except Exception as e:
-                row_number = int(idx) + 1 if isinstance(idx, (int, float)) else idx
-                errors.append(f"Row {row_number}: {str(e)}")
-
-        return {
-            "success": True,
-            "expenses_added": len(expenses_added),
-            "errors": errors,
-            "data": expenses_added,
-        }
-
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
+# Deprecated logic removed.
 
 if __name__ == "__main__":
     import uvicorn
