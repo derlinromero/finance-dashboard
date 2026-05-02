@@ -101,19 +101,50 @@ async def create_expense(
 
 
 @app.get("/expenses")
-async def get_expenses(limit: int = 100, user_id: str = Depends(get_current_user)):
-    """Get all expenses for a user"""
+async def get_expenses(
+    page: int = 1, limit: int = 20, user_id: str = Depends(get_current_user)
+):
+    """Get expenses for a user with pagination"""
     try:
+        # Validate pagination params
+        if page < 1:
+            page = 1
+        if limit < 1 or limit > 100:
+            limit = 20
+
+        # Calculate offset (0-indexed)
+        offset = (page - 1) * limit
+
+        # Get total count for user
+        count_response = (
+            supabase.table("expenses")
+            .select("*", count="exact")
+            .eq("user_id", user_id)
+            .execute()
+        )
+        total = count_response.count if count_response.count else 0
+        total_pages = (total + limit - 1) // limit if total > 0 else 0
+
+        # Get paginated data using range
         response = (
             supabase.table("expenses")
             .select("*")
             .eq("user_id", user_id)
             .order("date", desc=True)
-            .limit(limit)
+            .range(offset, offset + limit - 1)
             .execute()
         )
 
-        return {"success": True, "data": response.data}
+        return {
+            "success": True,
+            "data": response.data,
+            "pagination": {
+                "total": total,
+                "page": page,
+                "limit": limit,
+                "total_pages": total_pages,
+            },
+        }
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
