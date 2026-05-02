@@ -1,4 +1,5 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Depends
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.middleware.cors import CORSMiddleware
 from models import ExpenseCreate, ExpenseUpdate, CategoryCreate, CategoryUpdate
 from database import get_supabase
@@ -17,6 +18,28 @@ app.add_middleware(
 )
 
 supabase = get_supabase()
+security = HTTPBearer()
+
+
+async def get_current_user(
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+) -> str:
+    """Verify JWT token with Supabase and return user_id"""
+    try:
+        response = supabase.auth.get_user(credentials.credentials)
+        if response.user is None:
+            raise HTTPException(
+                status_code=401,
+                detail="Invalid authentication credentials",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+        return response.user.id
+    except Exception as e:
+        raise HTTPException(
+            status_code=401,
+            detail="Invalid or expired token",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
 
 
 @app.get("/")
@@ -28,7 +51,9 @@ def read_root():
 
 
 @app.post("/expenses")
-async def create_expense(expense: ExpenseCreate):
+async def create_expense(
+    expense: ExpenseCreate, user_id: str = Depends(get_current_user)
+):
     """Create a new expense"""
     try:
         final_category = expense.category if expense.category else "Uncategorized"
@@ -40,7 +65,7 @@ async def create_expense(expense: ExpenseCreate):
                 existing = (
                     supabase.table("categories")
                     .select("*")
-                    .eq("user_id", expense.user_id)
+                    .eq("user_id", user_id)
                     .eq("name", final_category)
                     .execute()
                 )
@@ -48,7 +73,7 @@ async def create_expense(expense: ExpenseCreate):
                 # Create if doesn't exist
                 if not existing.data or len(existing.data) == 0:
                     supabase.table("categories").insert(
-                        {"user_id": expense.user_id, "name": final_category}
+                        {"user_id": user_id, "name": final_category}
                     ).execute()
             except Exception as cat_error:
                 print(f"Note: Category creation skipped - {cat_error}")
@@ -61,7 +86,7 @@ async def create_expense(expense: ExpenseCreate):
 
         # Insert expense
         data = {
-            "user_id": expense.user_id,
+            "user_id": user_id,
             "title": expense.title,
             "amount": float(expense.amount),
             "category": final_category,
@@ -76,8 +101,8 @@ async def create_expense(expense: ExpenseCreate):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.get("/expenses/{user_id}")
-async def get_expenses(user_id: str, limit: int = 100):
+@app.get("/expenses")
+async def get_expenses(limit: int = 100, user_id: str = Depends(get_current_user)):
     """Get all expenses for a user"""
     try:
         response = (
@@ -96,9 +121,18 @@ async def get_expenses(user_id: str, limit: int = 100):
 
 
 @app.put("/expenses/{expense_id}")
-async def update_expense(expense_id: str, expense: ExpenseUpdate):
+async def update_expense(
+    expense_id: str, expense: ExpenseUpdate, user_id: str = Depends(get_current_user)
+):
     """Update an expense"""
     try:
+        # First verify the expense belongs to the user
+        expense_data = (
+            supabase.table("expenses").select("user_id").eq("id", expense_id).execute()
+        )
+        if not expense_data.data or expense_data.data[0]["user_id"] != user_id:
+            raise HTTPException(status_code=404, detail="Expense not found")
+
         update_data = {k: v for k, v in expense.dict().items() if v is not None}
 
         # Convert date to string if present
@@ -111,29 +145,19 @@ async def update_expense(expense_id: str, expense: ExpenseUpdate):
         # Auto-create category if it doesn't exist and is being changed
         if "category" in update_data and update_data["category"]:
             try:
-                # Get user_id fom the expense being updated
-                expense_data = (
-                    supabase.table("expenses")
-                    .select("user_id")
-                    .eq("id", expense_id)
+                # Check if category exists
+                existing = (
+                    supabase.table("categories")
+                    .select("*")
+                    .eq("user_id", user_id)
+                    .eq("name", update_data["category"])
                     .execute()
                 )
-                if expense_data.data and len(expense_data.data) > 0:
-                    user_id = expense_data.data[0]["user_id"]
 
-                    # Check if category exists
-                    existing = (
-                        supabase.table("categories")
-                        .select("*")
-                        .eq("user_id", user_id)
-                        .eq("name", update_data["category"])
-                        .execute()
-                    )
-
-                    if not existing.data or len(existing.data) == 0:
-                        supabase.table("categories").insert(
-                            {"user_id": user_id, "name": update_data["category"]}
-                        ).execute()
+                if not existing.data or len(existing.data) == 0:
+                    supabase.table("categories").insert(
+                        {"user_id": user_id, "name": update_data["category"]}
+                    ).execute()
             except Exception as cat_error:
                 print(f"Note: Category creation skipped - {cat_error}")
 
@@ -151,9 +175,16 @@ async def update_expense(expense_id: str, expense: ExpenseUpdate):
 
 
 @app.delete("/expenses/{expense_id}")
-async def delete_expense(expense_id: str):
+async def delete_expense(expense_id: str, user_id: str = Depends(get_current_user)):
     """Delete an expense"""
     try:
+        # First verify the expense belongs to the user
+        expense_data = (
+            supabase.table("expenses").select("user_id").eq("id", expense_id).execute()
+        )
+        if not expense_data.data or expense_data.data[0]["user_id"] != user_id:
+            raise HTTPException(status_code=404, detail="Expense not found")
+
         response = supabase.table("expenses").delete().eq("id", expense_id).execute()
 
         return {"success": True}
@@ -166,10 +197,12 @@ async def delete_expense(expense_id: str):
 
 
 @app.post("/categories")
-async def create_category(category: CategoryCreate):
+async def create_category(
+    category: CategoryCreate, user_id: str = Depends(get_current_user)
+):
     """Create a new category"""
     try:
-        data = {"user_id": category.user_id, "name": category.name}
+        data = {"user_id": user_id, "name": category.name}
 
         response = supabase.table("categories").insert(data).execute()
         return {"success": True, "data": response.data[0]}
@@ -178,8 +211,8 @@ async def create_category(category: CategoryCreate):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.get("/categories/{user_id}")
-async def get_categories(user_id: str):
+@app.get("/categories")
+async def get_categories(user_id: str = Depends(get_current_user)):
     """Get all categories for a user"""
     try:
         response = (
@@ -197,9 +230,21 @@ async def get_categories(user_id: str):
 
 
 @app.put("/categories/{category_id}")
-async def update_category(category_id: str, update: CategoryUpdate):
+async def update_category(
+    category_id: str, update: CategoryUpdate, user_id: str = Depends(get_current_user)
+):
     """Update a category name"""
     try:
+        # First verify the category belongs to the user
+        cat_data = (
+            supabase.table("categories")
+            .select("user_id")
+            .eq("id", category_id)
+            .execute()
+        )
+        if not cat_data.data or cat_data.data[0]["user_id"] != user_id:
+            raise HTTPException(status_code=404, detail="Category not found")
+
         response = (
             supabase.table("categories")
             .update({"name": update.name})
