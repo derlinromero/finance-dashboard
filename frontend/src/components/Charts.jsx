@@ -56,7 +56,7 @@ function Charts({ userId, monthlyLimit }) {
         setLoadingMonthly(true);
         const startDate = getStartDate(monthlyTimeRange);
         const response = await axios.get(
-          `${API_URL}/analytics/monthly/${userId}${startDate ? `?start_date=${startDate.toISOString().split('T')[0]}` : ''}`
+          `${API_URL}/analytics/monthly${startDate ? `?start_date=${startDate.toISOString().split('T')[0]}` : ''}`
         );
         setMonthlyData(response.data.data);
       } catch (error) {
@@ -75,7 +75,7 @@ function Charts({ userId, monthlyLimit }) {
         setLoadingCategory(true);
         const startDate = getStartDate(categoryTimeRange);
         const response = await axios.get(
-          `${API_URL}/analytics/category-all/${userId}${startDate ? `?start_date=${startDate.toISOString().split('T')[0]}` : ''}`
+          `${API_URL}/analytics/category-all${startDate ? `?start_date=${startDate.toISOString().split('T')[0]}` : ''}`
         );
         setAllTimeCategoryData(response.data.data);
       } catch (error) {
@@ -92,7 +92,7 @@ function Charts({ userId, monthlyLimit }) {
     const fetchDaily = async () => {
       try {
         setLoadingDaily(true);
-        const response = await axios.get(`${API_URL}/analytics/daily/${userId}?months=6`);
+        const response = await axios.get(`${API_URL}/analytics/daily?months=6`);
         setDailyData(response.data.data);
       } catch (error) {
         console.error('Error fetching daily analytics:', error);
@@ -108,7 +108,7 @@ function Charts({ userId, monthlyLimit }) {
     const fetchMom = async () => {
       try {
         setLoadingMom(true);
-        const response = await axios.get(`${API_URL}/analytics/mom/${userId}?months=12`);
+        const response = await axios.get(`${API_URL}/analytics/mom?months=12`);
         setMomData(response.data.data);
       } catch (error) {
         console.error('Error fetching MoM analytics:', error);
@@ -130,7 +130,7 @@ function Charts({ userId, monthlyLimit }) {
     try {
       // Fetch category data for this specific month
       const response = await axios.get(
-        `${API_URL}/analytics/category/${userId}?month=${clickedMonth}`
+        `${API_URL}/analytics/category?month=${clickedMonth}`
       );
       setMonthlyCategoryData(response.data.data);
     } catch (error) {
