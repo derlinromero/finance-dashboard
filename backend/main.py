@@ -281,8 +281,11 @@ async def get_daily_analytics(
         response = supabase.rpc(
             "get_daily_analytics", {"p_user_id": user_id, "p_months": months}
         ).execute()
+        if response.data is None:
+            return {"success": True, "data": []}
         return {"success": True, "data": response.data}
     except Exception as e:
+        print(f"[ERROR] get_daily_analytics: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -339,8 +342,11 @@ async def get_all_time_category_analytics(
             "get_all_time_category_analytics",
             {"p_user_id": user_id, "p_start_date": start_date},
         ).execute()
+        if response.data is None:
+            return {"success": True, "data": []}
         return {"success": True, "data": response.data}
     except Exception as e:
+        print(f"[ERROR] get_all_time_category_analytics: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
