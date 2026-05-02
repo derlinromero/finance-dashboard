@@ -55,6 +55,13 @@ async def create_expense(
 ):
     """Create a new expense"""
     try:
+        # Validate required fields
+        if not expense.title or not expense.title.strip():
+            raise HTTPException(status_code=400, detail="Title is required")
+
+        if expense.amount is None or expense.amount <= 0:
+            raise HTTPException(status_code=400, detail="Amount must be greater than 0")
+
         final_category = expense.category if expense.category else "Uncategorized"
 
         # Auto-create category if it doesn't exist
@@ -96,6 +103,8 @@ async def create_expense(
 
         return {"success": True, "data": response.data[0]}
 
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -232,11 +241,17 @@ async def create_category(
 ):
     """Create a new category"""
     try:
-        data = {"user_id": user_id, "name": category.name}
+        # Validate required fields
+        if not category.name or not category.name.strip():
+            raise HTTPException(status_code=400, detail="Category name is required")
+
+        data = {"user_id": user_id, "name": category.name.strip()}
 
         response = supabase.table("categories").insert(data).execute()
         return {"success": True, "data": response.data[0]}
 
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
