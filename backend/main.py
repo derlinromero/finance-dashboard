@@ -3,7 +3,6 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.middleware.cors import CORSMiddleware
 from models import ExpenseCreate, ExpenseUpdate, CategoryCreate, CategoryUpdate
 from database import get_supabase
-import pandas as pd
 from datetime import datetime, date
 
 app = FastAPI(title="SpendWise API")
@@ -273,197 +272,74 @@ async def delete_category(category_id: str):
 # ==================== ANALYTICS ====================
 
 
-@app.get("/analytics/daily/{user_id}")
-async def get_daily_analytics(user_id: str, months: int = 6):
-    """Get daily spending grouped by day of month and month"""
+@app.get("/analytics/daily")
+async def get_daily_analytics(
+    months: int = 6, user_id: str = Depends(get_current_user)
+):
+    """Get daily spending grouped by day of month and month via RPC"""
     try:
-        from datetime import timedelta
-
-        end_date = datetime.now().date()
-        start_date = end_date - timedelta(days=months * 30)
-
-        response = (
-            supabase.table("expenses")
-            .select("*")
-            .eq("user_id", user_id)
-            .gte("date", start_date.isoformat())
-            .execute()
-        )
-        expenses = response.data
-
-        if not expenses:
-            return {"success": True, "data": []}
-
-        df = pd.DataFrame(expenses)
-        df["date"] = pd.to_datetime(df["date"])
-        df["day"] = df["date"].dt.day
-        df["year_month"] = df["date"].dt.to_period("M").astype(str)
-
-        daily_data = (
-            df.groupby(["year_month", "day"]).agg({"amount": "sum"}).reset_index()
-        )
-        daily_data["amount"] = daily_data["amount"].astype(float)
-
-        return {"success": True, "data": daily_data.to_dict("records")}
-
+        response = supabase.rpc(
+            "get_daily_analytics", {"p_user_id": user_id, "p_months": months}
+        ).execute()
+        return {"success": True, "data": response.data}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.get("/analytics/mom/{user_id}")
-async def get_mom_analytics(user_id: str, months: int = 12):
-    """Get month-over-month percentage change"""
+@app.get("/analytics/mom")
+async def get_mom_analytics(months: int = 12, user_id: str = Depends(get_current_user)):
+    """Get month-over-month percentage change via RPC"""
     try:
-        from datetime import timedelta
-
-        end_date = datetime.now().date()
-        start_date = end_date - timedelta(days=months * 30)
-
-        response = (
-            supabase.table("expenses")
-            .select("*")
-            .eq("user_id", user_id)
-            .gte("date", start_date.isoformat())
-            .execute()
-        )
-        expenses = response.data
-
-        if not expenses:
-            return {"success": True, "data": []}
-
-        df = pd.DataFrame(expenses)
-        df["date"] = pd.to_datetime(df["date"])
-        df["month"] = df["date"].dt.to_period("M").astype(str)
-
-        monthly_totals = df.groupby("month").agg({"amount": "sum"}).reset_index()
-        monthly_totals["amount"] = monthly_totals["amount"].astype(float)
-        monthly_totals = monthly_totals.sort_values("month")
-
-        mom_data = []
-        for i in range(len(monthly_totals)):
-            current = monthly_totals.iloc[i]
-            if i == 0:
-                pct_change = None
-            else:
-                previous = monthly_totals.iloc[i - 1]["amount"]
-                if previous > 0:
-                    pct_change = ((current["amount"] - previous) / previous) * 100
-                else:
-                    pct_change = None
-
-            mom_data.append(
-                {
-                    "month": current["month"],
-                    "amount": current["amount"],
-                    "pct_change": round(pct_change, 2)
-                    if pct_change is not None
-                    else None,
-                }
-            )
-
-        return {"success": True, "data": mom_data}
-
+        response = supabase.rpc(
+            "get_mom_analytics", {"p_user_id": user_id, "p_months": months}
+        ).execute()
+        return {"success": True, "data": response.data}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.get("/analytics/monthly/{user_id}")
-async def get_monthly_analytics(user_id: str, start_date: str | None = None):
-    """Get monthly spending analytics"""
+@app.get("/analytics/monthly")
+async def get_monthly_analytics(
+    start_date: str | None = None, user_id: str = Depends(get_current_user)
+):
+    """Get monthly spending analytics via RPC"""
     try:
-        query = supabase.table("expenses").select("*").eq("user_id", user_id)
-
-        if start_date:
-            query = query.gte("date", start_date)
-
-        response = query.execute()
-        expenses = response.data
-
-        if not expenses:
-            return {"success": True, "data": []}
-
-        # Group by month
-        df = pd.DataFrame(expenses)
-        df["date"] = pd.to_datetime(df["date"])
-        df["month"] = df["date"].dt.to_period("M").astype(str)
-
-        monthly_data = df.groupby("month").agg({"amount": "sum"}).reset_index()
-
-        monthly_data["amount"] = monthly_data["amount"].astype(float)
-
-        return {"success": True, "data": monthly_data.to_dict("records")}
-
+        response = supabase.rpc(
+            "get_monthly_analytics", {"p_user_id": user_id, "p_start_date": start_date}
+        ).execute()
+        return {"success": True, "data": response.data}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.get("/analytics/category/{user_id}")
-async def get_category_analytics(user_id: str, month: str | None = None):
-    """Get spending by category"""
+@app.get("/analytics/category")
+async def get_category_analytics(
+    month: str | None = None, user_id: str = Depends(get_current_user)
+):
+    """Get spending by category via RPC"""
     try:
-        query = supabase.table("expenses").select("*").eq("user_id", user_id)
-
         if month is None:
             raise HTTPException(status_code=400, detail="Month parameter is required")
 
-        # Get last day of month
-        try:
-            year, month_num = map(int, month.split("-"))
-        except Exception:
-            raise HTTPException(
-                status_code=400, detail="Invalid month format. Use YYYY-MM"
-            )
-
-        start_date = f"{year}-{month_num:02d}-01"
-        if month_num == 12:
-            end_date = f"{year + 1}-01-01"
-        else:
-            end_date = f"{year}-{month_num + 1:02d}-01"
-
-        query = query.gte("date", start_date).lt("date", end_date)
-
-        response = query.execute()
-        expenses = response.data
-
-        if not expenses:
-            return {"success": True, "data": []}
-
-        # Group by category
-        df = pd.DataFrame(expenses)
-        category_data = df.groupby("category").agg({"amount": "sum"}).reset_index()
-
-        category_data["amount"] = category_data["amount"].astype(float)
-        category_data = category_data.sort_values("amount", ascending=False)
-
-        return {"success": True, "data": category_data.to_dict("records")}
-
+        response = supabase.rpc(
+            "get_category_analytics", {"p_user_id": user_id, "p_month": month}
+        ).execute()
+        return {"success": True, "data": response.data}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.get("/analytics/category-all/{user_id}")
-async def get_all_time_category_analytics(user_id: str, start_date: str | None = None):
-    """Get spending by category for ALL time (no month filter)"""
+@app.get("/analytics/category-all")
+async def get_all_time_category_analytics(
+    start_date: str | None = None, user_id: str = Depends(get_current_user)
+):
+    """Get spending by category for ALL time via RPC"""
     try:
-        query = supabase.table("expenses").select("*").eq("user_id", user_id)
-
-        if start_date:
-            query = query.gte("date", start_date)
-
-        response = query.execute()
-        expenses = response.data
-
-        if not expenses:
-            return {"success": True, "data": []}
-
-        df = pd.DataFrame(expenses)
-        category_data = df.groupby("category").agg({"amount": "sum"}).reset_index()
-
-        category_data["amount"] = category_data["amount"].astype(float)
-        category_data = category_data.sort_values("amount", ascending=False)
-
-        return {"success": True, "data": category_data.to_dict("records")}
-
+        response = supabase.rpc(
+            "get_all_time_category_analytics",
+            {"p_user_id": user_id, "p_start_date": start_date},
+        ).execute()
+        return {"success": True, "data": response.data}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
