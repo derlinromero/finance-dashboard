@@ -111,8 +111,11 @@ function App() {
   /* ---------------------------------- */
   useEffect(() => {
     if (session?.user && !isAuthLocked()) {
+      axios.defaults.headers.common['Authorization'] = `Bearer ${session.access_token}`;
       fetchExpenses();
       fetchCategories();
+    } else {
+      delete axios.defaults.headers.common['Authorization'];
     }
   }, [session]);
 
@@ -159,7 +162,7 @@ function App() {
     
     try {
       const response = await axios.get(
-        `${API_URL}/expenses/${session.user.id}`
+        `${API_URL}/expenses`
       );
       setExpenses(response.data.data);
     } catch (error) {
@@ -172,7 +175,7 @@ function App() {
     
     try {
       const response = await axios.get(
-        `${API_URL}/categories/${session.user.id}`
+        `${API_URL}/categories`
       );
       setCategories(response.data.data);
     } catch (error) {

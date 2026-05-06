@@ -2,14 +2,14 @@ from pydantic import BaseModel, field_validator
 from datetime import date, datetime
 from typing import Optional, Union
 
+
 class ExpenseCreate(BaseModel):
     title: str
     amount: float
     category: Optional[str] = None
     date: Union[date, str]
-    user_id: str
 
-    @field_validator('date', mode='before')
+    @field_validator("date", mode="before")
     @classmethod
     def parse_date(cls, v):
         if isinstance(v, date):
@@ -17,14 +17,15 @@ class ExpenseCreate(BaseModel):
         if isinstance(v, str):
             # Try to parse string date
             try:
-                return datetime.strptime(v, '%Y-%m-%d').date()
+                return datetime.strptime(v, "%Y-%m-%d").date()
             except ValueError:
                 # Try with time component
                 try:
-                    return datetime.fromisoformat(v.replace('Z', '+00:00')).date()
+                    return datetime.fromisoformat(v.replace("Z", "+00:00")).date()
                 except ValueError:
-                    raise ValueError('Date must be in YYYY-MM-DD format')
+                    raise ValueError("Date must be in YYYY-MM-DD format")
         return v
+
 
 class ExpenseUpdate(BaseModel):
     title: Optional[str] = None
@@ -32,9 +33,10 @@ class ExpenseUpdate(BaseModel):
     category: Optional[str] = None
     date: Optional[str] = None
 
+
 class CategoryCreate(BaseModel):
     name: str
-    user_id: str
+
 
 class CategoryUpdate(BaseModel):
     name: str

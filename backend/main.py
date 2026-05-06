@@ -1,9 +1,8 @@
-from fastapi import FastAPI, HTTPException, UploadFile, File
+from fastapi import FastAPI, HTTPException, Depends
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.middleware.cors import CORSMiddleware
 from models import ExpenseCreate, ExpenseUpdate, CategoryCreate, CategoryUpdate
 from database import get_supabase
-import pandas as pd
-import io
 from datetime import datetime, date
 
 app = FastAPI(title="SpendWise API")
@@ -18,6 +17,28 @@ app.add_middleware(
 )
 
 supabase = get_supabase()
+security = HTTPBearer()
+
+
+async def get_current_user(
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+) -> str:
+    """Verify JWT token with Supabase and return user_id"""
+    try:
+        response = supabase.auth.get_user(credentials.credentials)
+        if response.user is None:
+            raise HTTPException(
+                status_code=401,
+                detail="Invalid authentication credentials",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+        return response.user.id
+    except Exception as e:
+        raise HTTPException(
+            status_code=401,
+            detail="Invalid or expired token",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
 
 
 @app.get("/")
@@ -29,9 +50,18 @@ def read_root():
 
 
 @app.post("/expenses")
-async def create_expense(expense: ExpenseCreate):
+async def create_expense(
+    expense: ExpenseCreate, user_id: str = Depends(get_current_user)
+):
     """Create a new expense"""
     try:
+        # Validate required fields
+        if not expense.title or not expense.title.strip():
+            raise HTTPException(status_code=400, detail="Title is required")
+
+        if expense.amount is None or expense.amount <= 0:
+            raise HTTPException(status_code=400, detail="Amount must be greater than 0")
+
         final_category = expense.category if expense.category else "Uncategorized"
 
         # Auto-create category if it doesn't exist
@@ -41,7 +71,7 @@ async def create_expense(expense: ExpenseCreate):
                 existing = (
                     supabase.table("categories")
                     .select("*")
-                    .eq("user_id", expense.user_id)
+                    .eq("user_id", user_id)
                     .eq("name", final_category)
                     .execute()
                 )
@@ -49,7 +79,7 @@ async def create_expense(expense: ExpenseCreate):
                 # Create if doesn't exist
                 if not existing.data or len(existing.data) == 0:
                     supabase.table("categories").insert(
-                        {"user_id": expense.user_id, "name": final_category}
+                        {"user_id": user_id, "name": final_category}
                     ).execute()
             except Exception as cat_error:
                 print(f"Note: Category creation skipped - {cat_error}")
@@ -62,7 +92,7 @@ async def create_expense(expense: ExpenseCreate):
 
         # Insert expense
         data = {
-            "user_id": expense.user_id,
+            "user_id": user_id,
             "title": expense.title,
             "amount": float(expense.amount),
             "category": final_category,
@@ -73,33 +103,75 @@ async def create_expense(expense: ExpenseCreate):
 
         return {"success": True, "data": response.data[0]}
 
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.get("/expenses/{user_id}")
-async def get_expenses(user_id: str, limit: int = 100):
-    """Get all expenses for a user"""
+@app.get("/expenses")
+async def get_expenses(
+    page: int = 1, limit: int = 20, user_id: str = Depends(get_current_user)
+):
+    """Get expenses for a user with pagination"""
     try:
+        # Validate pagination params
+        if page < 1:
+            page = 1
+        if limit < 1 or limit > 100:
+            limit = 20
+
+        # Calculate offset (0-indexed)
+        offset = (page - 1) * limit
+
+        # Get total count for user
+        count_response = (
+            supabase.table("expenses")
+            .select("*", count="exact")
+            .eq("user_id", user_id)
+            .execute()
+        )
+        total = count_response.count if count_response.count else 0
+        total_pages = (total + limit - 1) // limit if total > 0 else 0
+
+        # Get paginated data using range
         response = (
             supabase.table("expenses")
             .select("*")
             .eq("user_id", user_id)
             .order("date", desc=True)
-            .limit(limit)
+            .range(offset, offset + limit - 1)
             .execute()
         )
 
-        return {"success": True, "data": response.data}
+        return {
+            "success": True,
+            "data": response.data,
+            "pagination": {
+                "total": total,
+                "page": page,
+                "limit": limit,
+                "total_pages": total_pages,
+            },
+        }
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.put("/expenses/{expense_id}")
-async def update_expense(expense_id: str, expense: ExpenseUpdate):
+async def update_expense(
+    expense_id: str, expense: ExpenseUpdate, user_id: str = Depends(get_current_user)
+):
     """Update an expense"""
     try:
+        # First verify the expense belongs to the user
+        expense_data = (
+            supabase.table("expenses").select("user_id").eq("id", expense_id).execute()
+        )
+        if not expense_data.data or expense_data.data[0]["user_id"] != user_id:
+            raise HTTPException(status_code=404, detail="Expense not found")
+
         update_data = {k: v for k, v in expense.dict().items() if v is not None}
 
         # Convert date to string if present
@@ -112,29 +184,19 @@ async def update_expense(expense_id: str, expense: ExpenseUpdate):
         # Auto-create category if it doesn't exist and is being changed
         if "category" in update_data and update_data["category"]:
             try:
-                # Get user_id fom the expense being updated
-                expense_data = (
-                    supabase.table("expenses")
-                    .select("user_id")
-                    .eq("id", expense_id)
+                # Check if category exists
+                existing = (
+                    supabase.table("categories")
+                    .select("*")
+                    .eq("user_id", user_id)
+                    .eq("name", update_data["category"])
                     .execute()
                 )
-                if expense_data.data and len(expense_data.data) > 0:
-                    user_id = expense_data.data[0]["user_id"]
 
-                    # Check if category exists
-                    existing = (
-                        supabase.table("categories")
-                        .select("*")
-                        .eq("user_id", user_id)
-                        .eq("name", update_data["category"])
-                        .execute()
-                    )
-
-                    if not existing.data or len(existing.data) == 0:
-                        supabase.table("categories").insert(
-                            {"user_id": user_id, "name": update_data["category"]}
-                        ).execute()
+                if not existing.data or len(existing.data) == 0:
+                    supabase.table("categories").insert(
+                        {"user_id": user_id, "name": update_data["category"]}
+                    ).execute()
             except Exception as cat_error:
                 print(f"Note: Category creation skipped - {cat_error}")
 
@@ -152,9 +214,16 @@ async def update_expense(expense_id: str, expense: ExpenseUpdate):
 
 
 @app.delete("/expenses/{expense_id}")
-async def delete_expense(expense_id: str):
+async def delete_expense(expense_id: str, user_id: str = Depends(get_current_user)):
     """Delete an expense"""
     try:
+        # First verify the expense belongs to the user
+        expense_data = (
+            supabase.table("expenses").select("user_id").eq("id", expense_id).execute()
+        )
+        if not expense_data.data or expense_data.data[0]["user_id"] != user_id:
+            raise HTTPException(status_code=404, detail="Expense not found")
+
         response = supabase.table("expenses").delete().eq("id", expense_id).execute()
 
         return {"success": True}
@@ -167,20 +236,28 @@ async def delete_expense(expense_id: str):
 
 
 @app.post("/categories")
-async def create_category(category: CategoryCreate):
+async def create_category(
+    category: CategoryCreate, user_id: str = Depends(get_current_user)
+):
     """Create a new category"""
     try:
-        data = {"user_id": category.user_id, "name": category.name}
+        # Validate required fields
+        if not category.name or not category.name.strip():
+            raise HTTPException(status_code=400, detail="Category name is required")
+
+        data = {"user_id": user_id, "name": category.name.strip()}
 
         response = supabase.table("categories").insert(data).execute()
         return {"success": True, "data": response.data[0]}
 
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.get("/categories/{user_id}")
-async def get_categories(user_id: str):
+@app.get("/categories")
+async def get_categories(user_id: str = Depends(get_current_user)):
     """Get all categories for a user"""
     try:
         response = (
@@ -198,9 +275,21 @@ async def get_categories(user_id: str):
 
 
 @app.put("/categories/{category_id}")
-async def update_category(category_id: str, update: CategoryUpdate):
+async def update_category(
+    category_id: str, update: CategoryUpdate, user_id: str = Depends(get_current_user)
+):
     """Update a category name"""
     try:
+        # First verify the category belongs to the user
+        cat_data = (
+            supabase.table("categories")
+            .select("user_id")
+            .eq("id", category_id)
+            .execute()
+        )
+        if not cat_data.data or cat_data.data[0]["user_id"] != user_id:
+            raise HTTPException(status_code=404, detail="Category not found")
+
         response = (
             supabase.table("categories")
             .update({"name": update.name})
@@ -229,282 +318,86 @@ async def delete_category(category_id: str):
 # ==================== ANALYTICS ====================
 
 
-@app.get("/analytics/daily/{user_id}")
-async def get_daily_analytics(user_id: str, months: int = 6):
-    """Get daily spending grouped by day of month and month"""
+@app.get("/analytics/daily")
+async def get_daily_analytics(
+    months: int = 6, user_id: str = Depends(get_current_user)
+):
+    """Get daily spending grouped by day of month and month via RPC"""
     try:
-        from datetime import timedelta
-
-        end_date = datetime.now().date()
-        start_date = end_date - timedelta(days=months * 30)
-
-        response = (
-            supabase.table("expenses")
-            .select("*")
-            .eq("user_id", user_id)
-            .gte("date", start_date.isoformat())
-            .execute()
-        )
-        expenses = response.data
-
-        if not expenses:
+        response = supabase.rpc(
+            "get_daily_analytics", {"p_user_id": user_id, "p_months": months}
+        ).execute()
+        if response.data is None:
             return {"success": True, "data": []}
+        return {"success": True, "data": response.data}
+    except Exception as e:
+        print(f"[ERROR] get_daily_analytics: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
-        df = pd.DataFrame(expenses)
-        df["date"] = pd.to_datetime(df["date"])
-        df["day"] = df["date"].dt.day
-        df["year_month"] = df["date"].dt.to_period("M").astype(str)
 
-        daily_data = (
-            df.groupby(["year_month", "day"]).agg({"amount": "sum"}).reset_index()
-        )
-        daily_data["amount"] = daily_data["amount"].astype(float)
-
-        return {"success": True, "data": daily_data.to_dict("records")}
-
+@app.get("/analytics/mom")
+async def get_mom_analytics(months: int = 12, user_id: str = Depends(get_current_user)):
+    """Get month-over-month percentage change via RPC"""
+    try:
+        response = supabase.rpc(
+            "get_mom_analytics", {"p_user_id": user_id, "p_months": months}
+        ).execute()
+        return {"success": True, "data": response.data}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.get("/analytics/mom/{user_id}")
-async def get_mom_analytics(user_id: str, months: int = 12):
-    """Get month-over-month percentage change"""
+@app.get("/analytics/monthly")
+async def get_monthly_analytics(
+    start_date: str | None = None, user_id: str = Depends(get_current_user)
+):
+    """Get monthly spending analytics via RPC"""
     try:
-        from datetime import timedelta
-
-        end_date = datetime.now().date()
-        start_date = end_date - timedelta(days=months * 30)
-
-        response = (
-            supabase.table("expenses")
-            .select("*")
-            .eq("user_id", user_id)
-            .gte("date", start_date.isoformat())
-            .execute()
-        )
-        expenses = response.data
-
-        if not expenses:
-            return {"success": True, "data": []}
-
-        df = pd.DataFrame(expenses)
-        df["date"] = pd.to_datetime(df["date"])
-        df["month"] = df["date"].dt.to_period("M").astype(str)
-
-        monthly_totals = df.groupby("month").agg({"amount": "sum"}).reset_index()
-        monthly_totals["amount"] = monthly_totals["amount"].astype(float)
-        monthly_totals = monthly_totals.sort_values("month")
-
-        mom_data = []
-        for i in range(len(monthly_totals)):
-            current = monthly_totals.iloc[i]
-            if i == 0:
-                pct_change = None
-            else:
-                previous = monthly_totals.iloc[i - 1]["amount"]
-                if previous > 0:
-                    pct_change = ((current["amount"] - previous) / previous) * 100
-                else:
-                    pct_change = None
-
-            mom_data.append(
-                {
-                    "month": current["month"],
-                    "amount": current["amount"],
-                    "pct_change": round(pct_change, 2)
-                    if pct_change is not None
-                    else None,
-                }
-            )
-
-        return {"success": True, "data": mom_data}
-
+        response = supabase.rpc(
+            "get_monthly_analytics", {"p_user_id": user_id, "p_start_date": start_date}
+        ).execute()
+        return {"success": True, "data": response.data}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.get("/analytics/monthly/{user_id}")
-async def get_monthly_analytics(user_id: str, start_date: str | None = None):
-    """Get monthly spending analytics"""
+@app.get("/analytics/category")
+async def get_category_analytics(
+    month: str | None = None, user_id: str = Depends(get_current_user)
+):
+    """Get spending by category via RPC"""
     try:
-        query = supabase.table("expenses").select("*").eq("user_id", user_id)
-
-        if start_date:
-            query = query.gte("date", start_date)
-
-        response = query.execute()
-        expenses = response.data
-
-        if not expenses:
-            return {"success": True, "data": []}
-
-        # Group by month
-        df = pd.DataFrame(expenses)
-        df["date"] = pd.to_datetime(df["date"])
-        df["month"] = df["date"].dt.to_period("M").astype(str)
-
-        monthly_data = df.groupby("month").agg({"amount": "sum"}).reset_index()
-
-        monthly_data["amount"] = monthly_data["amount"].astype(float)
-
-        return {"success": True, "data": monthly_data.to_dict("records")}
-
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-@app.get("/analytics/category/{user_id}")
-async def get_category_analytics(user_id: str, month: str | None = None):
-    """Get spending by category"""
-    try:
-        query = supabase.table("expenses").select("*").eq("user_id", user_id)
-
         if month is None:
             raise HTTPException(status_code=400, detail="Month parameter is required")
 
-        # Get last day of month
-        try:
-            year, month_num = map(int, month.split("-"))
-        except Exception:
-            raise HTTPException(
-                status_code=400, detail="Invalid month format. Use YYYY-MM"
-            )
-
-        start_date = f"{year}-{month_num:02d}-01"
-        if month_num == 12:
-            end_date = f"{year + 1}-01-01"
-        else:
-            end_date = f"{year}-{month_num + 1:02d}-01"
-
-        query = query.gte("date", start_date).lt("date", end_date)
-
-        response = query.execute()
-        expenses = response.data
-
-        if not expenses:
-            return {"success": True, "data": []}
-
-        # Group by category
-        df = pd.DataFrame(expenses)
-        category_data = df.groupby("category").agg({"amount": "sum"}).reset_index()
-
-        category_data["amount"] = category_data["amount"].astype(float)
-        category_data = category_data.sort_values("amount", ascending=False)
-
-        return {"success": True, "data": category_data.to_dict("records")}
-
+        response = supabase.rpc(
+            "get_category_analytics", {"p_user_id": user_id, "p_month": month}
+        ).execute()
+        return {"success": True, "data": response.data}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.get("/analytics/category-all/{user_id}")
-async def get_all_time_category_analytics(user_id: str, start_date: str | None = None):
-    """Get spending by category for ALL time (no month filter)"""
+@app.get("/analytics/category-all")
+async def get_all_time_category_analytics(
+    start_date: str | None = None, user_id: str = Depends(get_current_user)
+):
+    """Get spending by category for ALL time via RPC"""
     try:
-        query = supabase.table("expenses").select("*").eq("user_id", user_id)
-
-        if start_date:
-            query = query.gte("date", start_date)
-
-        response = query.execute()
-        expenses = response.data
-
-        if not expenses:
+        response = supabase.rpc(
+            "get_all_time_category_analytics",
+            {"p_user_id": user_id, "p_start_date": start_date},
+        ).execute()
+        if response.data is None:
             return {"success": True, "data": []}
-
-        df = pd.DataFrame(expenses)
-        category_data = df.groupby("category").agg({"amount": "sum"}).reset_index()
-
-        category_data["amount"] = category_data["amount"].astype(float)
-        category_data = category_data.sort_values("amount", ascending=False)
-
-        return {"success": True, "data": category_data.to_dict("records")}
-
+        return {"success": True, "data": response.data}
     except Exception as e:
+        print(f"[ERROR] get_all_time_category_analytics: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
 # ==================== CSV UPLOAD ====================
-
-
-@app.post("/upload/csv/{user_id}")
-async def upload_csv(user_id: str, file: UploadFile = File(...)):
-    """
-    Upload CSV file with expenses
-    Expected columns: title, amount, date
-    Optional: category
-    """
-    try:
-        contents = await file.read()
-        df = pd.read_csv(io.StringIO(contents.decode("utf-8")))
-
-        # Validate required columns
-        required_cols = ["title", "amount", "date"]
-        if not all(col in df.columns for col in required_cols):
-            raise HTTPException(
-                status_code=400, detail=f"CSV must contain columns: {required_cols}"
-            )
-
-        # Process each row
-        expenses_added = []
-        errors = []
-
-        for idx, row in df.iterrows():
-            try:
-                # Parse date
-                expense_date = pd.to_datetime(row["date"]).date()
-
-                # Get or suggest category
-                category = row.get("category", None)
-                if pd.isna(category) or not category:
-                    category = "Uncategorized"
-                else:
-                    category = str(category).strip()
-
-                # Auto-create category if needed
-                if category and category != "Uncategorized":
-                    try:
-                        existing = (
-                            supabase.table("categories")
-                            .select("*")
-                            .eq("user_id", user_id)
-                            .eq("name", category)
-                            .execute()
-                        )
-
-                        if not existing.data or len(existing.data) == 0:
-                            supabase.table("categories").insert(
-                                {"user_id": user_id, "name": category}
-                            ).execute()
-                    except:
-                        pass
-
-                # Insert
-                data = {
-                    "user_id": user_id,
-                    "title": row["title"],
-                    "amount": float(row["amount"]),
-                    "category": category,
-                    "date": expense_date.isoformat(),
-                }
-
-                response = supabase.table("expenses").insert(data).execute()
-                expenses_added.append(response.data[0])
-
-            except Exception as e:
-                row_number = int(idx) + 1 if isinstance(idx, (int, float)) else idx
-                errors.append(f"Row {row_number}: {str(e)}")
-
-        return {
-            "success": True,
-            "expenses_added": len(expenses_added),
-            "errors": errors,
-            "data": expenses_added,
-        }
-
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
+# Deprecated logic removed.
 
 if __name__ == "__main__":
     import uvicorn

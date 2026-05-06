@@ -27,7 +27,6 @@ function ExpenseForm({ userId, categories, onExpenseAdded }) {
       const formattedDate = date.includes('T') ? date.split('T')[0] : date;
 
       const response = await axios.post(`${API_URL}/expenses`, {
-        user_id: userId,
         title: title.trim(),
         amount: parseFloat(amount),
         category: categoryToSubmit || 'Uncategorized',
