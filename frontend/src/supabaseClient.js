@@ -9,7 +9,9 @@ if (!supabaseUrl || !supabaseAnonKey) {
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   auth: {
-    storage: window.localStorage,
+    // Use sessionStorage so auth session is cleared when the tab/browser is closed.
+    // This prevents persistent sessions on shared devices for a financial app.
+    storage: window.sessionStorage,
     autoRefreshToken: true,
     persistSession: true,
     detectSessionInUrl: true
